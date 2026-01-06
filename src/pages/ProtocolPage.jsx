@@ -160,9 +160,12 @@ export default function ProtocolPage() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>
-        {type === 'handover' ? '📤 Übergabe' : '📥 Rückgabe'}
-      </h1>
+      <div style={styles.logoContainer}>
+        <img src="/logo.png" alt="Firmenlogo" style={styles.logo} />
+        <h1 style={styles.title}>
+          {type === 'handover' ? 'Übergabe' : 'Rückgabe'}
+        </h1>
+      </div>
       
       <div style={styles.infoCard}>
         <strong>Mietvorgang:</strong> {rental.rental_number}<br/>
@@ -418,11 +421,22 @@ const styles = {
     backgroundColor: '#f9fafb',
     minHeight: '100vh',
   },
+  logoContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '15px',
+    marginBottom: '20px',
+  },
+  logo: {
+    maxWidth: '180px',
+    height: 'auto',
+  },
   title: {
     fontSize: '28px',
     fontWeight: 'bold',
     color: '#1f2937',
-    marginBottom: '20px',
+    margin: '0',
     textAlign: 'center',
   },
   infoCard: {

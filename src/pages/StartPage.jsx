@@ -50,7 +50,10 @@ export default function StartPage() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>🚐 Wohnmobil-Übergabeprotokoll</h1>
+        <div style={styles.logoContainer}>
+          <img src="/logo.png" alt="Firmenlogo" style={styles.logo} />
+          <h1 style={styles.title}>Wohnmobil-Übergabeprotokoll</h1>
+        </div>
         <p style={styles.subtitle}>Digitales Protokoll für Abholung und Rückgabe</p>
       </div>
 
@@ -131,16 +134,26 @@ const styles = {
     textAlign: 'center',
     marginBottom: '30px',
   },
+  logoContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '15px',
+  },
+  logo: {
+    maxWidth: '200px',
+    height: 'auto',
+  },
   title: {
     fontSize: '32px',
     fontWeight: 'bold',
     color: '#1f2937',
-    margin: '0 0 10px 0',
+    margin: '0',
   },
   subtitle: {
     fontSize: '16px',
     color: '#6b7280',
-    margin: 0,
+    margin: '10px 0 0 0',
   },
   card: {
     maxWidth: '600px',
