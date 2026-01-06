@@ -1,3 +1,5 @@
+cd ~/Desktop/womo-protokoll
+cat > src/pages/LoginPage.jsx << 'EOF'
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -160,3 +162,4 @@ const styles = {
     textDecoration: 'underline',
   },
 }
+EOF
