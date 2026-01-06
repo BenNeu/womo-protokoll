@@ -57,6 +57,12 @@ export default function StartPage() {
         <p style={styles.subtitle}>Digitales Protokoll für Abholung und Rückgabe</p>
       </div>
 
+      <div style={styles.adminButton}>
+        <button onClick={() => navigate('/admin')} style={styles.adminButtonStyle}>
+          ⚙️ Verwaltung
+        </button>
+      </div>
+
       <div style={styles.card}>
         <div style={styles.section}>
           <label style={styles.label}>Mietvorgang auswählen:</label>
@@ -77,7 +83,7 @@ export default function StartPage() {
           {rentals.length === 0 && (
             <p style={styles.emptyState}>
               Keine aktiven Mietvorgänge gefunden. 
-              Erstelle zuerst einen Mietvorgang in der Datenbank.
+              Erstelle zuerst einen Mietvorgang in der Verwaltung.
             </p>
           )}
         </div>
@@ -154,6 +160,20 @@ const styles = {
     fontSize: '16px',
     color: '#6b7280',
     margin: '10px 0 0 0',
+  },
+  adminButton: {
+    textAlign: 'center',
+    marginBottom: '20px',
+  },
+  adminButtonStyle: {
+    padding: '12px 24px',
+    fontSize: '16px',
+    backgroundColor: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
   },
   card: {
     maxWidth: '600px',
