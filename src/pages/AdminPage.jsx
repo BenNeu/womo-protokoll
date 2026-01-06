@@ -4,29 +4,28 @@ import { supabase } from '../services/supabaseClient'
 
 export default function AdminPage() {
   const [rentals, setRentals] = useState([])
+  const [filteredRentals, setFilteredRentals] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('all') // all, active, completed
+  const [statusFilter, setStatusFilter] = useState('all') // all, active, completed
+  const [searchTerm, setSearchTerm] = useState('')
+  const [dateFilter, setDateFilter] = useState({ start: '', end: '' })
   const navigate = useNavigate()
 
   useEffect(() => {
     loadRentals()
-  }, [filter])
+  }, [])
+
+  useEffect(() => {
+    applyFilters()
+  }, [rentals, statusFilter, searchTerm, dateFilter])
 
   const loadRentals = async () => {
     setLoading(true)
     
-    let query = supabase
+    const { data, error } = await supabase
       .from('OrcaCampers_rentals')
       .select('*')
       .order('created_at', { ascending: false })
-
-    if (filter === 'active') {
-      query = query.eq('status', 'active')
-    } else if (filter === 'completed') {
-      query = query.eq('status', 'completed')
-    }
-
-    const { data, error } = await query
 
     if (error) {
       console.error('Fehler beim Laden:', error)
@@ -36,6 +35,55 @@ export default function AdminPage() {
     }
     
     setLoading(false)
+  }
+
+  const applyFilters = () => {
+    let filtered = [...rentals]
+
+    // Status Filter
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(r => r.status === 'active')
+    } else if (statusFilter === 'completed') {
+      filtered = filtered.filter(r => r.status === 'completed')
+    }
+
+    // Suchbegriff Filter (Kunde, Fahrzeug, Vertragsnummer)
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      filtered = filtered.filter(r => 
+        r.customer_name?.toLowerCase().includes(search) ||
+        r.rental_number?.toLowerCase().includes(search) ||
+        r.vehicle_manufacturer?.toLowerCase().includes(search) ||
+        r.vehicle_model?.toLowerCase().includes(search) ||
+        r.vehicle_license_plate?.toLowerCase().includes(search) ||
+        r.customer_email?.toLowerCase().includes(search) ||
+        r.customer_phone?.toLowerCase().includes(search)
+      )
+    }
+
+    // Datums-Filter
+    if (dateFilter.start) {
+      filtered = filtered.filter(r => {
+        const startDate = new Date(r.start_date)
+        const filterDate = new Date(dateFilter.start)
+        return startDate >= filterDate
+      })
+    }
+    if (dateFilter.end) {
+      filtered = filtered.filter(r => {
+        const endDate = new Date(r.end_date)
+        const filterDate = new Date(dateFilter.end)
+        return endDate <= filterDate
+      })
+    }
+
+    setFilteredRentals(filtered)
+  }
+
+  const resetFilters = () => {
+    setStatusFilter('all')
+    setSearchTerm('')
+    setDateFilter({ start: '', end: '' })
   }
 
   const completeRental = async (id) => {
@@ -94,37 +142,99 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div style={styles.filters}>
-        <button 
-          onClick={() => setFilter('all')}
-          style={{...styles.filterButton, ...(filter === 'all' ? styles.filterButtonActive : {})}}
-        >
-          Alle ({rentals.length})
-        </button>
-        <button 
-          onClick={() => setFilter('active')}
-          style={{...styles.filterButton, ...(filter === 'active' ? styles.filterButtonActive : {})}}
-        >
-          Aktiv
-        </button>
-        <button 
-          onClick={() => setFilter('completed')}
-          style={{...styles.filterButton, ...(filter === 'completed' ? styles.filterButtonActive : {})}}
-        >
-          Abgeschlossen
-        </button>
+      {/* Filter Section */}
+      <div style={styles.filterSection}>
+        <h3 style={styles.filterTitle}>Filter & Suche</h3>
+        
+        {/* Suche */}
+        <div style={styles.searchBox}>
+          <input
+            type="text"
+            placeholder="🔍 Suche nach Kunde, Fahrzeug, Vertragsnummer..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={styles.searchInput}
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm('')} style={styles.clearButton}>
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Status Filter */}
+        <div style={styles.filters}>
+          <button 
+            onClick={() => setStatusFilter('all')}
+            style={{...styles.filterButton, ...(statusFilter === 'all' ? styles.filterButtonActive : {})}}
+          >
+            Alle ({rentals.length})
+          </button>
+          <button 
+            onClick={() => setStatusFilter('active')}
+            style={{...styles.filterButton, ...(statusFilter === 'active' ? styles.filterButtonActive : {})}}
+          >
+            Aktiv ({rentals.filter(r => r.status === 'active').length})
+          </button>
+          <button 
+            onClick={() => setStatusFilter('completed')}
+            style={{...styles.filterButton, ...(statusFilter === 'completed' ? styles.filterButtonActive : {})}}
+          >
+            Abgeschlossen ({rentals.filter(r => r.status === 'completed').length})
+          </button>
+        </div>
+
+        {/* Datums-Filter */}
+        <div style={styles.dateFilter}>
+          <div style={styles.dateField}>
+            <label style={styles.dateLabel}>Mietbeginn ab:</label>
+            <input
+              type="date"
+              value={dateFilter.start}
+              onChange={(e) => setDateFilter({...dateFilter, start: e.target.value})}
+              style={styles.dateInput}
+            />
+          </div>
+          <div style={styles.dateField}>
+            <label style={styles.dateLabel}>Mietende bis:</label>
+            <input
+              type="date"
+              value={dateFilter.end}
+              onChange={(e) => setDateFilter({...dateFilter, end: e.target.value})}
+              style={styles.dateInput}
+            />
+          </div>
+          <button onClick={resetFilters} style={styles.resetButton}>
+            🔄 Filter zurücksetzen
+          </button>
+        </div>
+
+        {/* Ergebnis-Anzeige */}
+        <div style={styles.resultCount}>
+          {filteredRentals.length} von {rentals.length} Mietvorgänge{filteredRentals.length !== rentals.length ? ' (gefiltert)' : ''}
+        </div>
       </div>
 
       <div style={styles.list}>
-        {rentals.length === 0 ? (
+        {filteredRentals.length === 0 ? (
           <div style={styles.empty}>
-            <p>Keine Mietvorgänge gefunden.</p>
-            <button onClick={() => navigate('/admin/new')} style={styles.newButton}>
-              + Ersten Mietvorgang anlegen
-            </button>
+            <p>
+              {rentals.length === 0 
+                ? 'Keine Mietvorgänge gefunden.' 
+                : 'Keine Mietvorgänge entsprechen den Filterkriterien.'}
+            </p>
+            {rentals.length === 0 ? (
+              <button onClick={() => navigate('/admin/new')} style={styles.newButton}>
+                + Ersten Mietvorgang anlegen
+              </button>
+            ) : (
+              <button onClick={resetFilters} style={styles.resetButton}>
+                Filter zurücksetzen
+              </button>
+            )}
           </div>
         ) : (
-          rentals.map(rental => (
+          filteredRentals.map(rental => (
             <div key={rental.id} style={styles.card}>
               <div style={styles.cardHeader}>
                 <div>
@@ -141,7 +251,7 @@ export default function AdminPage() {
               <div style={styles.cardBody}>
                 <p><strong>Kunde:</strong> {rental.customer_name}</p>
                 <p><strong>Fahrzeug:</strong> {rental.vehicle_manufacturer} {rental.vehicle_model} ({rental.vehicle_license_plate})</p>
-                <p><strong>Zeitraum:</strong> {new Date(rental.start_date).toLocaleDateString()} - {new Date(rental.end_date).toLocaleDateString()}</p>
+                <p><strong>Zeitraum:</strong> {new Date(rental.start_date).toLocaleDateString('de-DE')} - {new Date(rental.end_date).toLocaleDateString('de-DE')}</p>
                 {rental.customer_email && <p><strong>Email:</strong> {rental.customer_email}</p>}
                 {rental.customer_phone && <p><strong>Telefon:</strong> {rental.customer_phone}</p>}
               </div>
@@ -226,11 +336,51 @@ const styles = {
     cursor: 'pointer',
     fontWeight: '600',
   },
-  filters: {
+  filterSection: {
     maxWidth: '1200px',
-    margin: '0 auto 20px',
+    margin: '0 auto 25px',
+    backgroundColor: 'white',
+    borderRadius: '12px',
+    padding: '20px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  },
+  filterTitle: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '15px',
+  },
+  searchBox: {
+    position: 'relative',
+    marginBottom: '15px',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '12px 40px 12px 12px',
+    fontSize: '16px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '8px',
+    backgroundColor: 'white',
+    boxSizing: 'border-box',
+  },
+  clearButton: {
+    position: 'absolute',
+    right: '10px',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    padding: '4px 8px',
+    fontSize: '16px',
+    backgroundColor: 'transparent',
+    color: '#6b7280',
+    border: 'none',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+  },
+  filters: {
     display: 'flex',
     gap: '10px',
+    marginBottom: '15px',
+    flexWrap: 'wrap',
   },
   filterButton: {
     padding: '10px 20px',
@@ -246,6 +396,53 @@ const styles = {
     backgroundColor: '#10b981',
     color: 'white',
     borderColor: '#10b981',
+  },
+  dateFilter: {
+    display: 'flex',
+    gap: '15px',
+    alignItems: 'flex-end',
+    flexWrap: 'wrap',
+  },
+  dateField: {
+    flex: 1,
+    minWidth: '200px',
+  },
+  dateLabel: {
+    display: 'block',
+    marginBottom: '6px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#374151',
+  },
+  dateInput: {
+    width: '100%',
+    padding: '10px',
+    fontSize: '14px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '8px',
+    backgroundColor: 'white',
+    boxSizing: 'border-box',
+  },
+  resetButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    backgroundColor: '#f59e0b',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '500',
+    whiteSpace: 'nowrap',
+  },
+  resultCount: {
+    marginTop: '15px',
+    padding: '10px',
+    backgroundColor: '#f3f4f6',
+    borderRadius: '6px',
+    fontSize: '14px',
+    fontWeight: '500',
+    color: '#374151',
+    textAlign: 'center',
   },
   list: {
     maxWidth: '1200px',
