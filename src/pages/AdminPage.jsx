@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
+import { generateProtocolPDF } from '../services/pdfExport'
 
 export default function AdminPage() {
   const [rentals, setRentals] = useState([])
@@ -115,6 +116,48 @@ export default function AdminPage() {
     } else {
       alert('✅ Mietvorgang gelöscht!')
       loadRentals()
+    }
+  }
+
+  const downloadProtocolPDF = async (rentalId) => {
+    try {
+      // Protokolle für diesen Mietvorgang laden
+      const { data: protocols, error: protocolError } = await supabase
+        .from('OrcaCampers_handover_protocols')
+        .select('*')
+        .eq('rental_id', rentalId)
+        .order('created_at', { ascending: false })
+
+      if (protocolError) throw protocolError
+
+      if (!protocols || protocols.length === 0) {
+        alert('Keine Protokolle für diesen Mietvorgang gefunden.')
+        return
+      }
+
+      // Mietvorgang-Daten laden
+      const rental = rentals.find(r => r.id === rentalId)
+      if (!rental) {
+        alert('Mietvorgang nicht gefunden.')
+        return
+      }
+
+      // Wenn mehrere Protokolle: Auswahl anbieten
+      let selectedProtocol
+      if (protocols.length === 1) {
+        selectedProtocol = protocols[0]
+      } else {
+        const choice = window.confirm(
+          `Es gibt ${protocols.length} Protokolle. OK = Neuestes, Abbrechen = Ältestes`
+        )
+        selectedProtocol = choice ? protocols[0] : protocols[protocols.length - 1]
+      }
+
+      // PDF generieren
+      await generateProtocolPDF(selectedProtocol, rental)
+    } catch (err) {
+      console.error('Fehler beim PDF-Export:', err)
+      alert('Fehler beim PDF-Export: ' + err.message)
     }
   }
 
@@ -262,6 +305,13 @@ export default function AdminPage() {
                   style={styles.editButton}
                 >
                   ✏️ Bearbeiten
+                </button>
+
+                <button 
+                  onClick={() => downloadProtocolPDF(rental.id)} 
+                  style={styles.pdfButton}
+                >
+                  📄 PDF
                 </button>
                 
                 {rental.status === 'active' && (
@@ -489,6 +539,15 @@ const styles = {
     padding: '8px 16px',
     fontSize: '14px',
     backgroundColor: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  },
+  pdfButton: {
+    padding: '8px 16px',
+    fontSize: '14px',
+    backgroundColor: '#8b5cf6',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
