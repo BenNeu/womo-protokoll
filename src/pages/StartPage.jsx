@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../services/supabaseClient'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
 
 export default function StartPage() {
   const [rentals, setRentals] = useState([])
@@ -9,18 +8,6 @@ export default function StartPage() {
   const [protocolType, setProtocolType] = useState('handover')
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
-  const { user, signOut } = useAuth()
-
-  const handleLogout = async () => {
-    if (window.confirm('Möchtest du dich wirklich abmelden?')) {
-      try {
-        await signOut()
-        navigate('/login')
-      } catch (error) {
-        alert('Fehler beim Abmelden: ' + error.message)
-      }
-    }
-  }
 
   useEffect(() => {
     loadRentals()
@@ -62,21 +49,12 @@ export default function StartPage() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.headerContainer}>
-        <div style={styles.header}>
-          <div style={styles.logoContainer}>
-            <img src="/logo.png" alt="Firmenlogo" style={styles.logo} />
-            <h1 style={styles.title}>Wohnmobil-Übergabeprotokoll</h1>
-          </div>
-          <p style={styles.subtitle}>Digitales Protokoll für Abholung und Rückgabe</p>
+      <div style={styles.header}>
+        <div style={styles.logoContainer}>
+          <img src="/logo.png" alt="Firmenlogo" style={styles.logo} />
+          <h1 style={styles.title}>Wohnmobil-Übergabeprotokoll</h1>
         </div>
-        
-        <div style={styles.userBar}>
-          <span style={styles.userEmail}>👤 {user?.email}</span>
-          <button onClick={handleLogout} style={styles.logoutButton}>
-            Abmelden
-          </button>
-        </div>
+        <p style={styles.subtitle}>Digitales Protokoll für Abholung und Rückgabe</p>
       </div>
 
       <div style={styles.adminButton}>
@@ -158,11 +136,9 @@ const styles = {
     backgroundColor: '#f3f4f6',
     padding: '20px',
   },
-  headerContainer: {
-    marginBottom: '30px',
-  },
   header: {
     textAlign: 'center',
+    marginBottom: '30px',
   },
   logoContainer: {
     display: 'flex',
@@ -184,32 +160,6 @@ const styles = {
     fontSize: '16px',
     color: '#6b7280',
     margin: '10px 0 0 0',
-  },
-  userBar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    maxWidth: '600px',
-    margin: '20px auto',
-    padding: '12px 20px',
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  userEmail: {
-    fontSize: '14px',
-    color: '#374151',
-    fontWeight: '500',
-  },
-  logoutButton: {
-    padding: '8px 16px',
-    fontSize: '14px',
-    backgroundColor: '#ef4444',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
   },
   adminButton: {
     textAlign: 'center',

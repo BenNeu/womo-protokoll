@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
 import { generateProtocolPDF } from '../services/pdfExport'
-import { useAuth } from '../contexts/AuthContext'
 
 export default function AdminPage() {
   const [rentals, setRentals] = useState([])
@@ -12,18 +11,6 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState({ start: '', end: '' })
   const navigate = useNavigate()
-  const { user, signOut } = useAuth()
-
-  const handleLogout = async () => {
-    if (window.confirm('Möchtest du dich wirklich abmelden?')) {
-      try {
-        await signOut()
-        navigate('/login')
-      } catch (error) {
-        alert('Fehler beim Abmelden: ' + error.message)
-      }
-    }
-  }
 
   useEffect(() => {
     loadRentals()
@@ -184,18 +171,9 @@ export default function AdminPage() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.headerContainer}>
-        <div style={styles.header}>
-          <img src="/logo.png" alt="Logo" style={styles.logo} />
-          <h1 style={styles.title}>Verwaltung</h1>
-        </div>
-
-        <div style={styles.userBar}>
-          <span style={styles.userEmail}>👤 {user?.email}</span>
-          <button onClick={handleLogout} style={styles.logoutButton}>
-            Abmelden
-          </button>
-        </div>
+      <div style={styles.header}>
+        <img src="/logo.png" alt="Logo" style={styles.logo} />
+        <h1 style={styles.title}>Verwaltung</h1>
       </div>
 
       <div style={styles.actions}>
@@ -366,11 +344,9 @@ const styles = {
     backgroundColor: '#f3f4f6',
     padding: '20px',
   },
-  headerContainer: {
-    marginBottom: '20px',
-  },
   header: {
     textAlign: 'center',
+    marginBottom: '30px',
   },
   logo: {
     maxWidth: '120px',
@@ -382,32 +358,6 @@ const styles = {
     fontWeight: 'bold',
     color: '#1f2937',
     margin: '0',
-  },
-  userBar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    maxWidth: '1200px',
-    margin: '15px auto 0',
-    padding: '12px 20px',
-    backgroundColor: 'white',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  userEmail: {
-    fontSize: '14px',
-    color: '#374151',
-    fontWeight: '500',
-  },
-  logoutButton: {
-    padding: '8px 16px',
-    fontSize: '14px',
-    backgroundColor: '#ef4444',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontWeight: '500',
   },
   actions: {
     maxWidth: '1200px',
