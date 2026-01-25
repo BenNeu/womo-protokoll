@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
 import { generateProtocolPDF } from '../services/pdfExport'
@@ -7,7 +7,7 @@ export default function AdminPage() {
   const [rentals, setRentals] = useState([])
   const [filteredRentals, setFilteredRentals] = useState([])
   const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState('all') // all, active, completed
+  const [statusFilter, setStatusFilter] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState({ start: '', end: '' })
   const navigate = useNavigate()
@@ -16,9 +16,49 @@ export default function AdminPage() {
     loadRentals()
   }, [])
 
+  const applyFilters = useCallback(() => {
+    let filtered = [...rentals]
+
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(r => r.status === 'active')
+    } else if (statusFilter === 'completed') {
+      filtered = filtered.filter(r => r.status === 'completed')
+    }
+
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase()
+      filtered = filtered.filter(r => 
+        r.customer_name?.toLowerCase().includes(search) ||
+        r.rental_number?.toLowerCase().includes(search) ||
+        r.vehicle_manufacturer?.toLowerCase().includes(search) ||
+        r.vehicle_model?.toLowerCase().includes(search) ||
+        r.vehicle_license_plate?.toLowerCase().includes(search) ||
+        r.customer_email?.toLowerCase().includes(search) ||
+        r.customer_phone?.toLowerCase().includes(search)
+      )
+    }
+
+    if (dateFilter.start) {
+      filtered = filtered.filter(r => {
+        const startDate = new Date(r.start_date)
+        const filterDate = new Date(dateFilter.start)
+        return startDate >= filterDate
+      })
+    }
+    if (dateFilter.end) {
+      filtered = filtered.filter(r => {
+        const endDate = new Date(r.end_date)
+        const filterDate = new Date(dateFilter.end)
+        return endDate <= filterDate
+      })
+    }
+
+    setFilteredRentals(filtered)
+  }, [rentals, statusFilter, searchTerm, dateFilter])
+
   useEffect(() => {
     applyFilters()
-  }, [rentals, statusFilter, searchTerm, dateFilter])
+  }, [applyFilters])
 
   const loadRentals = async () => {
     setLoading(true)
@@ -36,49 +76,6 @@ export default function AdminPage() {
     }
     
     setLoading(false)
-  }
-
-  const applyFilters = () => {
-    let filtered = [...rentals]
-
-    // Status Filter
-    if (statusFilter === 'active') {
-      filtered = filtered.filter(r => r.status === 'active')
-    } else if (statusFilter === 'completed') {
-      filtered = filtered.filter(r => r.status === 'completed')
-    }
-
-    // Suchbegriff Filter (Kunde, Fahrzeug, Vertragsnummer)
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase()
-      filtered = filtered.filter(r => 
-        r.customer_name?.toLowerCase().includes(search) ||
-        r.rental_number?.toLowerCase().includes(search) ||
-        r.vehicle_manufacturer?.toLowerCase().includes(search) ||
-        r.vehicle_model?.toLowerCase().includes(search) ||
-        r.vehicle_license_plate?.toLowerCase().includes(search) ||
-        r.customer_email?.toLowerCase().includes(search) ||
-        r.customer_phone?.toLowerCase().includes(search)
-      )
-    }
-
-    // Datums-Filter
-    if (dateFilter.start) {
-      filtered = filtered.filter(r => {
-        const startDate = new Date(r.start_date)
-        const filterDate = new Date(dateFilter.start)
-        return startDate >= filterDate
-      })
-    }
-    if (dateFilter.end) {
-      filtered = filtered.filter(r => {
-        const endDate = new Date(r.end_date)
-        const filterDate = new Date(dateFilter.end)
-        return endDate <= filterDate
-      })
-    }
-
-    setFilteredRentals(filtered)
   }
 
   const resetFilters = () => {
@@ -121,7 +118,6 @@ export default function AdminPage() {
 
   const downloadProtocolPDF = async (rentalId) => {
     try {
-      // Protokolle für diesen Mietvorgang laden
       const { data: protocols, error: protocolError } = await supabase
         .from('OrcaCampers_handover_protocols')
         .select('*')
@@ -135,14 +131,12 @@ export default function AdminPage() {
         return
       }
 
-      // Mietvorgang-Daten laden
       const rental = rentals.find(r => r.id === rentalId)
       if (!rental) {
         alert('Mietvorgang nicht gefunden.')
         return
       }
 
-      // Wenn mehrere Protokolle: Auswahl anbieten
       let selectedProtocol
       if (protocols.length === 1) {
         selectedProtocol = protocols[0]
@@ -153,7 +147,6 @@ export default function AdminPage() {
         selectedProtocol = choice ? protocols[0] : protocols[protocols.length - 1]
       }
 
-      // PDF generieren
       await generateProtocolPDF(selectedProtocol, rental)
     } catch (err) {
       console.error('Fehler beim PDF-Export:', err)
@@ -185,11 +178,9 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {/* Filter Section */}
       <div style={styles.filterSection}>
         <h3 style={styles.filterTitle}>Filter & Suche</h3>
         
-        {/* Suche */}
         <div style={styles.searchBox}>
           <input
             type="text"
@@ -205,7 +196,6 @@ export default function AdminPage() {
           )}
         </div>
 
-        {/* Status Filter */}
         <div style={styles.filters}>
           <button 
             onClick={() => setStatusFilter('all')}
@@ -227,7 +217,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Datums-Filter */}
         <div style={styles.dateFilter}>
           <div style={styles.dateField}>
             <label style={styles.dateLabel}>Mietbeginn ab:</label>
@@ -252,7 +241,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Ergebnis-Anzeige */}
         <div style={styles.resultCount}>
           {filteredRentals.length} von {rentals.length} Mietvorgänge{filteredRentals.length !== rentals.length ? ' (gefiltert)' : ''}
         </div>

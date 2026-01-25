@@ -65,6 +65,7 @@ export default function CleaningProtocolPage() {
 
   useEffect(() => {
     loadRental()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rentalId])
 
   const loadRental = async () => {
@@ -102,7 +103,6 @@ export default function CleaningProtocolPage() {
       employee_name: employeeName,
       cleaning_date: new Date().toISOString(),
       
-      // 1. Außen & Technik
       exterior_wash: exteriorWash,
       exterior_inspection: exteriorInspection,
       tire_check: tireCheck,
@@ -111,7 +111,6 @@ export default function CleaningProtocolPage() {
       roof_check: roofCheck,
       underbody_check: underbodyCheck,
       
-      // 2. Innenraum
       vacuum_interior: vacuumInterior,
       mop_floor: mopFloor,
       kitchen_clean: kitchenClean,
@@ -122,7 +121,6 @@ export default function CleaningProtocolPage() {
       windows_inside: windowsInside,
       odor_check: odorCheck,
       
-      // 3. Wasser, Gas & Strom
       freshwater_fill: freshwaterFill,
       wastewater_empty: wastewaterEmpty,
       toilet_additive: toiletAdditive,
@@ -130,7 +128,6 @@ export default function CleaningProtocolPage() {
       power_check: powerCheck,
       battery_check: batteryCheck,
       
-      // 4. Ausstattung & Inventar
       dishes_complete: dishesComplete,
       cookware_complete: cookwareComplete,
       camping_furniture: campingFurniture,
@@ -140,7 +137,6 @@ export default function CleaningProtocolPage() {
       safety_equipment: safetyEquipment,
       manuals_present: manualsPresent,
       
-      // 5. Fahrzeug & Sicherheit
       mileage: parseInt(mileage) || 0,
       fuel_level: fuelLevel,
       oil_check: oilCheck,
@@ -148,7 +144,6 @@ export default function CleaningProtocolPage() {
       tire_pressure: tirePressure,
       keys_complete: keysComplete,
       
-      // 6. Dokumentation
       notes: notes,
       special_remarks: specialRemarks,
       employee_signature: signature
@@ -187,7 +182,6 @@ export default function CleaningProtocolPage() {
       </div>
 
       <form onSubmit={handleSubmit} style={styles.form}>
-        {/* Mitarbeiter */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>Mitarbeiter</h2>
           <input
@@ -200,7 +194,6 @@ export default function CleaningProtocolPage() {
           />
         </div>
 
-        {/* 1. Außen & Technik */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>1️⃣ Außen & Technik</h2>
           <CheckboxItem label="Außenwäsche (Dach, Markise, Felgen)" checked={exteriorWash} onChange={setExteriorWash} />
@@ -212,7 +205,6 @@ export default function CleaningProtocolPage() {
           <CheckboxItem label="Unterboden grob prüfen" checked={underbodyCheck} onChange={setUnderbodyCheck} />
         </div>
 
-        {/* 2. Innenraum */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>2️⃣ Innenraum – Reinigung</h2>
           <CheckboxItem label="Komplett saugen (inkl. Polster, Fahrerhaus)" checked={vacuumInterior} onChange={setVacuumInterior} />
@@ -226,7 +218,6 @@ export default function CleaningProtocolPage() {
           <CheckboxItem label="Geruchskontrolle (ggf. Ozon)" checked={odorCheck} onChange={setOdorCheck} />
         </div>
 
-        {/* 3. Wasser, Gas & Strom */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>3️⃣ Wasser, Gas & Strom</h2>
           <CheckboxItem label="Frischwassertank spülen / neu befüllen" checked={freshwaterFill} onChange={setFreshwaterFill} />
@@ -237,7 +228,6 @@ export default function CleaningProtocolPage() {
           <CheckboxItem label="Batterie / Bordspannung checken" checked={batteryCheck} onChange={setBatteryCheck} />
         </div>
 
-        {/* 4. Ausstattung & Inventar */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>4️⃣ Ausstattung & Inventar</h2>
           <CheckboxItem label="Geschirr & Besteck vollständig" checked={dishesComplete} onChange={setDishesComplete} />
@@ -250,7 +240,6 @@ export default function CleaningProtocolPage() {
           <CheckboxItem label="Bedienungsanleitungen vorhanden" checked={manualsPresent} onChange={setManualsPresent} />
         </div>
 
-        {/* 5. Fahrzeug & Sicherheit */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>5️⃣ Fahrzeug & Sicherheit</h2>
           
@@ -278,7 +267,6 @@ export default function CleaningProtocolPage() {
           <CheckboxItem label="Schlüssel (Anzahl vollständig)" checked={keysComplete} onChange={setKeysComplete} />
         </div>
 
-        {/* 6. Dokumentation */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>6️⃣ Dokumentation</h2>
           
@@ -301,7 +289,6 @@ export default function CleaningProtocolPage() {
           />
         </div>
 
-        {/* Unterschrift */}
         <div style={styles.section}>
           <h2 style={styles.sectionTitle}>Unterschrift Mitarbeiter</h2>
           <SignaturePad onSave={setSignature} />

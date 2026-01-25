@@ -68,8 +68,9 @@ export default function ProtocolPage() {
   })
 
   useEffect(() => {
-    loadRental()
-  }, [])
+  loadRental()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [rentalId, type])
 
   const loadRental = async () => {
     const { data, error } = await supabase

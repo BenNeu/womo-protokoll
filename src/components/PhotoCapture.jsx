@@ -1,89 +1,120 @@
-import { useState } from 'react'
-import { supabase } from '../services/supabaseClient'
+import { useRef, useState } from 'react'
 
-export default function PhotoCapture({ onPhotoAdded, protocolId, label = "Foto aufnehmen" }) {
-  const [uploading, setUploading] = useState(false)
+export default function PhotoCapture({ onCapture }) {
+  const videoRef = useRef(null)
+  const [stream, setStream] = useState(null)
+  const [isCameraActive, setIsCameraActive] = useState(false)
 
-  const handleCapture = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    setUploading(true)
-
+  const startCamera = async () => {
     try {
-      // Dateiname mit Timestamp
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${protocolId}/${Date.now()}.${fileExt}`
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      })
+      videoRef.current.srcObject = mediaStream
+      setStream(mediaStream)
+      setIsCameraActive(true)
+    } catch (err) {
+      alert('Kamera-Zugriff fehlgeschlagen: ' + err.message)
+    }
+  }
 
-      // Upload zu Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('protocol-photos')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
+  const capturePhoto = () => {
+    const video = videoRef.current
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(video, 0, 0)
+    
+    const imageData = canvas.toDataURL('image/jpeg', 0.8)
+    onCapture(imageData)
+    stopCamera()
+  }
 
-      if (error) throw error
-
-      // Public URL holen
-      const { data: { publicUrl } } = supabase.storage
-        .from('protocol-photos')
-        .getPublicUrl(fileName)
-
-      onPhotoAdded(publicUrl)
-      
-      // Input zurücksetzen für weitere Uploads
-      e.target.value = ''
-      
-    } catch (error) {
-      console.error('Upload-Fehler:', error)
-      alert('Fehler beim Hochladen: ' + error.message)
-    } finally {
-      setUploading(false)
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop())
+      setStream(null)
+      setIsCameraActive(false)
     }
   }
 
   return (
     <div style={styles.container}>
-      <input
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleCapture}
-        disabled={uploading}
-        style={styles.input}
-        id={`photo-input-${protocolId}`}
-      />
-      <label 
-        htmlFor={`photo-input-${protocolId}`}
-        style={{
-          ...styles.button,
-          opacity: uploading ? 0.6 : 1,
-          cursor: uploading ? 'not-allowed' : 'pointer'
-        }}
-      >
-        {uploading ? '⏳ Uploading...' : `📷 ${label}`}
-      </label>
+      {!isCameraActive ? (
+        <button onClick={startCamera} style={styles.button}>
+          📷 Foto aufnehmen
+        </button>
+      ) : (
+        <div style={styles.cameraContainer}>
+          <video 
+            ref={videoRef} 
+            autoPlay 
+            playsInline 
+            style={styles.video}
+          />
+          <div style={styles.controls}>
+            <button onClick={capturePhoto} style={styles.captureButton}>
+              📸 Aufnehmen
+            </button>
+            <button onClick={stopCamera} style={styles.cancelButton}>
+              ❌ Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 const styles = {
   container: {
-    marginBottom: '15px',
-  },
-  input: {
-    display: 'none',
+    marginBottom: '20px',
   },
   button: {
-    display: 'inline-block',
     padding: '12px 24px',
+    fontSize: '16px',
     backgroundColor: '#3b82f6',
     color: 'white',
+    border: 'none',
     borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+  },
+  cameraContainer: {
+    width: '100%',
+  },
+  video: {
+    width: '100%',
+    maxHeight: '400px',
+    borderRadius: '8px',
+    backgroundColor: '#000',
+  },
+  controls: {
+    display: 'flex',
+    gap: '10px',
+    marginTop: '10px',
+  },
+  captureButton: {
+    flex: 1,
+    padding: '12px',
     fontSize: '16px',
-    fontWeight: '500',
-    textAlign: 'center',
-    transition: 'background-color 0.2s',
-  }
+    backgroundColor: '#10b981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+  },
+  cancelButton: {
+    flex: 1,
+    padding: '12px',
+    fontSize: '16px',
+    backgroundColor: '#ef4444',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+  },
 }

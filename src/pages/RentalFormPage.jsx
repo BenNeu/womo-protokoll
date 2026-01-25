@@ -27,10 +27,11 @@ export default function RentalFormPage() {
   })
 
   useEffect(() => {
-    if (isEdit) {
-      loadRental()
-    }
-  }, [id])
+  if (isEdit) {
+    loadRental()
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [id])
 
   const loadRental = async () => {
     const { data, error } = await supabase
