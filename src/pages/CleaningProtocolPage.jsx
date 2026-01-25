@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
 import SignaturePad from '../components/SignaturePad'
+import PhotoCapture from '../components/PhotoCapture'
 
 export default function CleaningProtocolPage() {
   const { rentalId } = useParams()
@@ -61,6 +62,7 @@ export default function CleaningProtocolPage() {
   // 6. Dokumentation
   const [notes, setNotes] = useState('')
   const [specialRemarks, setSpecialRemarks] = useState('')
+  const [photos, setPhotos] = useState([])
   const [signature, setSignature] = useState('')
 
   useEffect(() => {
@@ -146,6 +148,7 @@ export default function CleaningProtocolPage() {
       
       notes: notes,
       special_remarks: specialRemarks,
+      damage_photos: photos,
       employee_signature: signature
     }
 
@@ -287,6 +290,29 @@ export default function CleaningProtocolPage() {
             style={styles.textarea}
             rows={3}
           />
+
+          <label style={styles.label}>Fotos (Schäden, Zustand):</label>
+          <PhotoCapture onCapture={(photo) => setPhotos([...photos, photo])} />
+          
+          {photos.length > 0 && (
+            <div style={styles.photoPreview}>
+              <p style={styles.photoCount}>{photos.length} Foto(s) aufgenommen</p>
+              <div style={styles.photoGrid}>
+                {photos.map((photo, index) => (
+                  <div key={index} style={styles.photoItem}>
+                    <img src={photo} alt={`Foto ${index + 1}`} style={styles.photoImage} />
+                    <button
+                      type="button"
+                      onClick={() => setPhotos(photos.filter((_, i) => i !== index))}
+                      style={styles.photoDeleteButton}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={styles.section}>
@@ -422,6 +448,52 @@ const styles = {
   checkboxText: {
     fontSize: '15px',
     color: '#374151',
+  },
+  photoPreview: {
+    marginTop: '15px',
+    padding: '15px',
+    backgroundColor: '#f9fafb',
+    borderRadius: '8px',
+  },
+  photoCount: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: '10px',
+  },
+  photoGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+    gap: '10px',
+  },
+  photoItem: {
+    position: 'relative',
+    borderRadius: '8px',
+    overflow: 'hidden',
+    border: '2px solid #e5e7eb',
+  },
+  photoImage: {
+    width: '100%',
+    height: '150px',
+    objectFit: 'cover',
+    display: 'block',
+  },
+  photoDeleteButton: {
+    position: 'absolute',
+    top: '5px',
+    right: '5px',
+    width: '28px',
+    height: '28px',
+    backgroundColor: '#ef4444',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actions: {
     display: 'flex',
