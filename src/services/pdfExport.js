@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
