@@ -313,6 +313,13 @@ export default function AdminPage() {
                 >
                   📄 PDF
                 </button>
+
+                <button 
+                  onClick={() => navigate(`/cleaning/${rental.id}`)} 
+                  style={styles.cleaningButton}
+                >
+                  🧹 Aufbereitung
+                </button>
                 
                 {rental.status === 'active' && (
                   <button 
@@ -548,6 +555,15 @@ const styles = {
     padding: '8px 16px',
     fontSize: '14px',
     backgroundColor: '#8b5cf6',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  },
+  cleaningButton: {
+    padding: '8px 16px',
+    fontSize: '14px',
+    backgroundColor: '#f59e0b',
     color: 'white',
     border: 'none',
     borderRadius: '6px',
