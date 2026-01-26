@@ -65,7 +65,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.setFont('helvetica', 'normal')
     pdf.text(`Kilometerstand: ${protocol.mileage} km`, 15, yPos)
     yPos += 6
-    pdf.text(`Tankfüllung: ${protocol.fuel_level}`, 15, yPos)
+    pdf.text(`Tankfuellung: ${protocol.fuel_level}`, 15, yPos)
     yPos += 6
     const cleanliness = protocol.cleanliness_interior === 'clean' ? 'Sauber' : 
                        protocol.cleanliness_interior === 'acceptable' ? 'Akzeptabel' : 'Verschmutzt'
@@ -75,7 +75,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
     // Schäden
     if (protocol.damages && protocol.damages.length > 0) {
       pdf.setFont('helvetica', 'bold')
-      pdf.text('Schäden:', 15, yPos)
+      pdf.text('Schaeden:', 15, yPos)
       yPos += 6
       pdf.setFont('helvetica', 'normal')
       const damagesText = pdf.splitTextToSize(protocol.damages, 180)
@@ -120,7 +120,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
         try {
           pdf.addImage(protocol.photos[i], 'JPEG', photoX, photoY, photoWidth, photoHeight)
         } catch (e) {
-          console.log('Foto konnte nicht eingefügt werden')
+          console.log('Foto konnte nicht eingefuegt werden')
         }
 
         if ((i + 1) % 2 === 0) {
@@ -152,7 +152,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
       try {
         pdf.addImage(protocol.landlord_signature, 'PNG', 15, yPos, 80, 30)
       } catch (e) {
-        console.log('Vermieter-Unterschrift konnte nicht eingefügt werden')
+        console.log('Vermieter-Unterschrift konnte nicht eingefuegt werden')
       }
     }
     yPos += 35
@@ -167,7 +167,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
       try {
         pdf.addImage(protocol.customer_signature, 'PNG', 110, yPos, 80, 30)
       } catch (e) {
-        console.log('Mieter-Unterschrift konnte nicht eingefügt werden')
+        console.log('Mieter-Unterschrift konnte nicht eingefuegt werden')
       }
     }
     yPos += 35
@@ -239,15 +239,15 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     // Kategorie 1: Außen & Technik
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('1️⃣ Außen & Technik', 15, yPos)
+    pdf.text('1. Aussen & Technik', 15, yPos)
     yPos += 8
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
     
     const section1 = [
-      { label: 'Außenwäsche', value: protocol.exterior_wash },
-      { label: 'Sichtprüfung Karosserie', value: protocol.exterior_inspection },
-      { label: 'Reifen prüfen', value: protocol.tire_check },
+      { label: 'Aussenwaesche', value: protocol.exterior_wash },
+      { label: 'Sichtpruefung Karosserie', value: protocol.exterior_inspection },
+      { label: 'Reifen pruefen', value: protocol.tire_check },
       { label: 'Scheiben & Spiegel', value: protocol.windows_mirrors },
       { label: 'Markise reinigen', value: protocol.awning_clean },
       { label: 'Dach / Solarpanels', value: protocol.roof_check },
@@ -255,7 +255,7 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     ]
     
     section1.forEach(item => {
-      const checkbox = item.value ? '☑' : '☐'
+      const checkbox = item.value ? '[X]' : '[ ]'
       pdf.text(`${checkbox} ${item.label}`, 20, yPos)
       yPos += 6
     })
@@ -264,7 +264,7 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     // Kategorie 2: Innenraum
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('2️⃣ Innenraum – Reinigung', 15, yPos)
+    pdf.text('2. Innenraum - Reinigung', 15, yPos)
     yPos += 8
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
@@ -272,17 +272,17 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     const section2 = [
       { label: 'Komplett saugen', value: protocol.vacuum_interior },
       { label: 'Boden wischen', value: protocol.mop_floor },
-      { label: 'Küche reinigen', value: protocol.kitchen_clean },
-      { label: 'Kühlschrank', value: protocol.fridge_clean },
+      { label: 'Kueche reinigen', value: protocol.kitchen_clean },
+      { label: 'Kuehlschrank', value: protocol.fridge_clean },
       { label: 'Bad & WC', value: protocol.bathroom_clean },
       { label: 'WC-Kassette leeren', value: protocol.toilet_empty },
-      { label: 'Mülleimer leeren', value: protocol.trash_empty },
+      { label: 'Muelleimer leeren', value: protocol.trash_empty },
       { label: 'Fenster innen', value: protocol.windows_inside },
       { label: 'Geruchskontrolle', value: protocol.odor_check },
     ]
     
     section2.forEach(item => {
-      const checkbox = item.value ? '☑' : '☐'
+      const checkbox = item.value ? '[X]' : '[ ]'
       pdf.text(`${checkbox} ${item.label}`, 20, yPos)
       yPos += 6
     })
@@ -297,7 +297,7 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     // Kategorie 3: Wasser, Gas & Strom
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('3️⃣ Wasser, Gas & Strom', 15, yPos)
+    pdf.text('3. Wasser, Gas & Strom', 15, yPos)
     yPos += 8
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
@@ -312,7 +312,7 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     ]
     
     section3.forEach(item => {
-      const checkbox = item.value ? '☑' : '☐'
+      const checkbox = item.value ? '[X]' : '[ ]'
       pdf.text(`${checkbox} ${item.label}`, 20, yPos)
       yPos += 6
     })
@@ -321,15 +321,15 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     // Kategorie 4: Ausstattung & Inventar
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('4️⃣ Ausstattung & Inventar', 15, yPos)
+    pdf.text('4. Ausstattung & Inventar', 15, yPos)
     yPos += 8
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
     
     const section4 = [
       { label: 'Geschirr & Besteck', value: protocol.dishes_complete },
-      { label: 'Töpfe, Pfannen', value: protocol.cookware_complete },
-      { label: 'Campingmöbel', value: protocol.camping_furniture },
+      { label: 'Toepfe, Pfannen', value: protocol.cookware_complete },
+      { label: 'Campingmoebel', value: protocol.camping_furniture },
       { label: 'Auffahrkeile', value: protocol.ramps },
       { label: 'Stromkabel', value: protocol.power_cable },
       { label: 'Wasserschlauch', value: protocol.water_hose },
@@ -338,7 +338,7 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     ]
     
     section4.forEach(item => {
-      const checkbox = item.value ? '☑' : '☐'
+      const checkbox = item.value ? '[X]' : '[ ]'
       pdf.text(`${checkbox} ${item.label}`, 20, yPos)
       yPos += 6
     })
@@ -351,7 +351,7 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     // Kategorie 5: Fahrzeug & Sicherheit
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('5️⃣ Fahrzeug & Sicherheit', 15, yPos)
+    pdf.text('5. Fahrzeug & Sicherheit', 15, yPos)
     yPos += 8
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
@@ -362,14 +362,14 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     yPos += 8
     
     const section5 = [
-      { label: 'Ölstand / Kühlwasser', value: protocol.oil_check },
+      { label: 'Oelstand / Kuehlwasser', value: protocol.oil_check },
       { label: 'Fehlermeldungen', value: protocol.warning_lights },
       { label: 'Reifendruck', value: protocol.tire_pressure },
-      { label: 'Schlüssel vollständig', value: protocol.keys_complete },
+      { label: 'Schluessel vollstaendig', value: protocol.keys_complete },
     ]
     
     section5.forEach(item => {
-      const checkbox = item.value ? '☑' : '☐'
+      const checkbox = item.value ? '[X]' : '[ ]'
       pdf.text(`${checkbox} ${item.label}`, 20, yPos)
       yPos += 6
     })
@@ -378,14 +378,14 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     // Kategorie 6: Dokumentation
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('6️⃣ Dokumentation', 15, yPos)
+    pdf.text('6. Dokumentation', 15, yPos)
     yPos += 8
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
 
     if (protocol.notes) {
       pdf.setFont('helvetica', 'bold')
-      pdf.text('Notizen / Schäden:', 20, yPos)
+      pdf.text('Notizen / Schaeden:', 20, yPos)
       yPos += 6
       pdf.setFont('helvetica', 'normal')
       const notesLines = pdf.splitTextToSize(protocol.notes, 170)
@@ -427,7 +427,7 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
           pdf.setFontSize(8)
           pdf.text(`Foto ${i + 1}`, photoX, photoY + photoHeight + 4)
         } catch (e) {
-          console.log('Foto konnte nicht eingefügt werden:', e)
+          console.log('Foto konnte nicht eingefuegt werden:', e)
         }
 
         if ((i + 1) % 2 === 0) {
@@ -459,7 +459,7 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       try {
         pdf.addImage(protocol.employee_signature, 'PNG', 15, yPos, 80, 30)
       } catch (e) {
-        console.log('Unterschrift konnte nicht eingefügt werden')
+        console.log('Unterschrift konnte nicht eingefuegt werden')
       }
       yPos += 35
     }
