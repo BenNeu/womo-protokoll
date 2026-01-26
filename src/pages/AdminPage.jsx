@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
-import { generateProtocolPDF } from '../services/pdfExport'
+import { generateProtocolPDF, generateCleaningProtocolPDF } from '../services/pdfExport'
 
 export default function AdminPage() {
   const [rentals, setRentals] = useState([])
@@ -148,6 +148,44 @@ export default function AdminPage() {
       }
 
       await generateProtocolPDF(selectedProtocol, rental)
+    } catch (err) {
+      console.error('Fehler beim PDF-Export:', err)
+      alert('Fehler beim PDF-Export: ' + err.message)
+    }
+  }
+
+  const downloadCleaningPDF = async (rentalId) => {
+    try {
+      const { data: protocols, error: protocolError } = await supabase
+        .from('OrcaCampers_cleaning_protocols')
+        .select('*')
+        .eq('rental_id', rentalId)
+        .order('created_at', { ascending: false })
+
+      if (protocolError) throw protocolError
+
+      if (!protocols || protocols.length === 0) {
+        alert('Keine Aufbereitungs-Protokolle für diesen Mietvorgang gefunden.')
+        return
+      }
+
+      const rental = rentals.find(r => r.id === rentalId)
+      if (!rental) {
+        alert('Mietvorgang nicht gefunden.')
+        return
+      }
+
+      let selectedProtocol
+      if (protocols.length === 1) {
+        selectedProtocol = protocols[0]
+      } else {
+        const choice = window.confirm(
+          `Es gibt ${protocols.length} Aufbereitungs-Protokolle. OK = Neuestes, Abbrechen = Ältestes`
+        )
+        selectedProtocol = choice ? protocols[0] : protocols[protocols.length - 1]
+      }
+
+      await generateCleaningProtocolPDF(selectedProtocol, rental)
     } catch (err) {
       console.error('Fehler beim PDF-Export:', err)
       alert('Fehler beim PDF-Export: ' + err.message)
@@ -307,6 +345,13 @@ export default function AdminPage() {
                   style={styles.cleaningButton}
                 >
                   🧹 Aufbereitung
+                </button>
+
+                <button 
+                  onClick={() => downloadCleaningPDF(rental.id)} 
+                  style={styles.cleaningPDFButton}
+                >
+                  📋 Aufbereitungs-PDF
                 </button>
                 
                 {rental.status === 'active' && (
@@ -552,6 +597,15 @@ const styles = {
     padding: '8px 16px',
     fontSize: '14px',
     backgroundColor: '#f59e0b',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  },
+  cleaningPDFButton: {
+    padding: '8px 16px',
+    fontSize: '14px',
+    backgroundColor: '#fb923c',
     color: 'white',
     border: 'none',
     borderRadius: '6px',

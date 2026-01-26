@@ -3,279 +3,479 @@ import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
 export const generateProtocolPDF = async (protocol, rental) => {
-  // PDF erstellen
-  const pdf = new jsPDF('p', 'mm', 'a4')
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  const pageHeight = pdf.internal.pageSize.getHeight()
-  let yPos = 20
+  try {
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    let yPos = 20
 
-  // Header - Logo könnte hier eingefügt werden
-  pdf.setFontSize(20)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('OrcaCampers', pageWidth / 2, yPos, { align: 'center' })
-  yPos += 10
+    // Header mit Logo
+    const logoImg = new Image()
+    logoImg.src = '/logo.png'
+    await new Promise((resolve) => {
+      logoImg.onload = resolve
+      logoImg.onerror = resolve
+    })
+    
+    try {
+      pdf.addImage(logoImg, 'PNG', 15, yPos, 30, 30)
+    } catch (e) {
+      console.log('Logo konnte nicht geladen werden')
+    }
 
-  pdf.setFontSize(16)
-  pdf.text(
-    protocol.protocol_type === 'handover' ? 'Übergabeprotokoll' : 'Rückgabeprotokoll',
-    pageWidth / 2,
-    yPos,
-    { align: 'center' }
-  )
-  yPos += 15
+    // Titel
+    pdf.setFontSize(20)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Übergabeprotokoll', 105, yPos + 10, { align: 'center' })
+    
+    yPos += 40
 
-  // Mietvorgang Info
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Mietvorgang:', 20, yPos)
-  yPos += 7
-  
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(10)
-  pdf.text(`Vertragsnummer: ${rental.rental_number}`, 20, yPos)
-  yPos += 5
-  pdf.text(`Kunde: ${rental.customer_name}`, 20, yPos)
-  yPos += 5
-  pdf.text(
-    `Fahrzeug: ${rental.vehicle_manufacturer} ${rental.vehicle_model} (${rental.vehicle_license_plate})`,
-    20,
-    yPos
-  )
-  yPos += 5
-  pdf.text(
-    `Zeitraum: ${new Date(rental.start_date).toLocaleDateString('de-DE')} - ${new Date(rental.end_date).toLocaleDateString('de-DE')}`,
-    20,
-    yPos
-  )
-  yPos += 10
+    // Protokoll-Typ
+    const protocolType = protocol.protocol_type === 'handover' ? 'Übergabe' : 'Rücknahme'
+    pdf.setFontSize(14)
+    pdf.text(`Protokolltyp: ${protocolType}`, 15, yPos)
+    yPos += 10
 
-  // Protokoll-Details
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Protokoll-Details:', 20, yPos)
-  yPos += 7
+    // Fahrzeug-Info
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Fahrzeug: ${rental.vehicle_manufacturer} ${rental.vehicle_model}`, 15, yPos)
+    yPos += 7
+    pdf.text(`Kennzeichen: ${rental.vehicle_license_plate}`, 15, yPos)
+    yPos += 7
+    pdf.text(`Vertragsnummer: ${rental.rental_number}`, 15, yPos)
+    yPos += 7
+    pdf.text(`Kunde: ${rental.customer_name}`, 15, yPos)
+    yPos += 10
 
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(10)
-  pdf.text(`Datum: ${new Date(protocol.created_at).toLocaleDateString('de-DE')}`, 20, yPos)
-  yPos += 5
-  pdf.text(`Durchgeführt von: ${protocol.completed_by}`, 20, yPos)
-  yPos += 5
-  pdf.text(`Kilometerstand: ${protocol.mileage} km`, 20, yPos)
-  yPos += 5
-  pdf.text(`Tankstand: ${getFuelLevelText(protocol.fuel_level)}`, 20, yPos)
-  yPos += 5
-  pdf.text(`Frischwasser: ${getWaterLevelText(protocol.fresh_water_tank)}`, 20, yPos)
-  yPos += 5
-  pdf.text(`Abwasser: ${getWaterLevelText(protocol.waste_water_tank)}`, 20, yPos)
-  yPos += 10
+    // Datum
+    const protocolDate = new Date(protocol.created_at)
+    pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')} ${protocolDate.toLocaleTimeString('de-DE')}`, 15, yPos)
+    yPos += 12
 
-  // Äußerer Zustand
-  if (yPos > pageHeight - 60) {
+    // Linie
+    pdf.setDrawColor(200, 200, 200)
+    pdf.line(15, yPos, 195, yPos)
+    yPos += 10
+
+    // Fahrzeugzustand
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Fahrzeugzustand', 15, yPos)
+    yPos += 8
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Kilometerstand: ${protocol.mileage} km`, 15, yPos)
+    yPos += 6
+    pdf.text(`Tankfüllung: ${protocol.fuel_level}`, 15, yPos)
+    yPos += 6
+    const cleanliness = protocol.cleanliness_interior === 'clean' ? 'Sauber' : 
+                       protocol.cleanliness_interior === 'acceptable' ? 'Akzeptabel' : 'Verschmutzt'
+    pdf.text(`Sauberkeit: ${cleanliness}`, 15, yPos)
+    yPos += 10
+
+    // Schäden
+    if (protocol.damages && protocol.damages.length > 0) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Schäden:', 15, yPos)
+      yPos += 6
+      pdf.setFont('helvetica', 'normal')
+      const damagesText = pdf.splitTextToSize(protocol.damages, 180)
+      pdf.text(damagesText, 15, yPos)
+      yPos += (damagesText.length * 5) + 5
+    }
+
+    // Notizen
+    if (protocol.notes) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Notizen:', 15, yPos)
+      yPos += 6
+      pdf.setFont('helvetica', 'normal')
+      const notesText = pdf.splitTextToSize(protocol.notes, 180)
+      pdf.text(notesText, 15, yPos)
+      yPos += (notesText.length * 5) + 10
+    }
+
+    // Fotos
+    if (protocol.photos && protocol.photos.length > 0) {
+      if (yPos > 200) {
+        pdf.addPage()
+        yPos = 20
+      }
+
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Fotos:', 15, yPos)
+      yPos += 10
+
+      // Fotos einfügen (2 pro Zeile)
+      let photoX = 15
+      let photoY = yPos
+      const photoWidth = 85
+      const photoHeight = 60
+
+      for (let i = 0; i < protocol.photos.length; i++) {
+        if (photoY + photoHeight > 270) {
+          pdf.addPage()
+          photoY = 20
+        }
+
+        try {
+          pdf.addImage(protocol.photos[i], 'JPEG', photoX, photoY, photoWidth, photoHeight)
+        } catch (e) {
+          console.log('Foto konnte nicht eingefügt werden')
+        }
+
+        if ((i + 1) % 2 === 0) {
+          photoX = 15
+          photoY += photoHeight + 10
+        } else {
+          photoX = 110
+        }
+      }
+
+      yPos = photoY + photoHeight + 15
+    }
+
+    // Neue Seite für Unterschriften
     pdf.addPage()
     yPos = 20
-  }
 
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Äußerer Zustand:', 20, yPos)
-  yPos += 7
-
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-  
-  Object.entries(protocol.exterior_condition || {}).forEach(([key, value]) => {
-    if (yPos > pageHeight - 20) {
-      pdf.addPage()
-      yPos = 20
-    }
-    const label = getConditionLabel(key)
-    const status = getStatusText(value.status)
-    pdf.text(`${label}: ${status}`, 25, yPos)
-    if (value.notes) {
-      yPos += 4
-      pdf.setFont('helvetica', 'italic')
-      pdf.text(`  Anmerkung: ${value.notes}`, 25, yPos)
-      pdf.setFont('helvetica', 'normal')
-    }
-    yPos += 5
-  })
-  yPos += 5
-
-  // Innenausstattung
-  if (yPos > pageHeight - 60) {
-    pdf.addPage()
-    yPos = 20
-  }
-
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Innenausstattung:', 20, yPos)
-  yPos += 7
-
-  pdf.setFont('helvetica', 'normal')
-  pdf.setFontSize(9)
-
-  Object.entries(protocol.interior_condition || {}).forEach(([key, value]) => {
-    if (yPos > pageHeight - 20) {
-      pdf.addPage()
-      yPos = 20
-    }
-    const label = getConditionLabel(key)
-    const status = getStatusText(value.status)
-    pdf.text(`${label}: ${status}`, 25, yPos)
-    if (value.notes) {
-      yPos += 4
-      pdf.setFont('helvetica', 'italic')
-      pdf.text(`  Anmerkung: ${value.notes}`, 25, yPos)
-      pdf.setFont('helvetica', 'normal')
-    }
-    yPos += 5
-  })
-  yPos += 5
-
-  // Schäden/Anmerkungen
-  if (protocol.damage_notes) {
-    if (yPos > pageHeight - 40) {
-      pdf.addPage()
-      yPos = 20
-    }
-
+    // Unterschriften
     pdf.setFontSize(12)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('Schäden/Anmerkungen:', 20, yPos)
-    yPos += 7
+    pdf.text('Unterschriften', 15, yPos)
+    yPos += 10
 
-    pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(9)
-    const splitNotes = pdf.splitTextToSize(protocol.damage_notes, pageWidth - 40)
-    pdf.text(splitNotes, 20, yPos)
-    yPos += splitNotes.length * 5 + 5
+    // Vermieter
+    pdf.setFontSize(10)
+    pdf.text('Vermieter:', 15, yPos)
+    yPos += 10
+    if (protocol.landlord_signature) {
+      try {
+        pdf.addImage(protocol.landlord_signature, 'PNG', 15, yPos, 80, 30)
+      } catch (e) {
+        console.log('Vermieter-Unterschrift konnte nicht eingefügt werden')
+      }
+    }
+    yPos += 35
+    pdf.line(15, yPos, 95, yPos)
+    pdf.text('Datum, Unterschrift Vermieter', 15, yPos + 5)
+
+    // Mieter
+    yPos -= 45
+    pdf.text('Mieter:', 110, yPos)
+    yPos += 10
+    if (protocol.customer_signature) {
+      try {
+        pdf.addImage(protocol.customer_signature, 'PNG', 110, yPos, 80, 30)
+      } catch (e) {
+        console.log('Mieter-Unterschrift konnte nicht eingefügt werden')
+      }
+    }
+    yPos += 35
+    pdf.line(110, yPos, 190, yPos)
+    pdf.text('Datum, Unterschrift Mieter', 110, yPos + 5)
+
+    // PDF speichern
+    const fileName = `${protocolType}_${rental.rental_number}_${protocolDate.toISOString().split('T')[0]}.pdf`
+    pdf.save(fileName)
+
+  } catch (error) {
+    console.error('Fehler beim PDF-Export:', error)
+    throw error
   }
+}
 
-  // Zusätzliche Notizen
-  if (protocol.additional_notes) {
-    if (yPos > pageHeight - 40) {
+export const generateCleaningProtocolPDF = async (protocol, rental) => {
+  try {
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    let yPos = 20
+
+    // Header mit Logo
+    const logoImg = new Image()
+    logoImg.src = '/logo.png'
+    await new Promise((resolve) => {
+      logoImg.onload = resolve
+      logoImg.onerror = resolve
+    })
+    
+    try {
+      pdf.addImage(logoImg, 'PNG', 15, yPos, 30, 30)
+    } catch (e) {
+      console.log('Logo konnte nicht geladen werden')
+    }
+
+    // Titel
+    pdf.setFontSize(20)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Fahrzeug-Aufbereitungs-Protokoll', 105, yPos + 10, { align: 'center' })
+    
+    yPos += 40
+
+    // Fahrzeug-Info
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Fahrzeug: ${rental.vehicle_manufacturer} ${rental.vehicle_model}`, 15, yPos)
+    yPos += 7
+    pdf.text(`Kennzeichen: ${rental.vehicle_license_plate}`, 15, yPos)
+    yPos += 7
+    pdf.text(`Vertragsnummer: ${rental.rental_number}`, 15, yPos)
+    yPos += 7
+    pdf.text(`Kunde: ${rental.customer_name}`, 15, yPos)
+    yPos += 10
+
+    // Mitarbeiter & Datum
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(`Mitarbeiter: ${protocol.employee_name}`, 15, yPos)
+    yPos += 7
+    pdf.setFont('helvetica', 'normal')
+    const cleaningDate = new Date(protocol.cleaning_date)
+    pdf.text(`Datum: ${cleaningDate.toLocaleDateString('de-DE')} ${cleaningDate.toLocaleTimeString('de-DE')}`, 15, yPos)
+    yPos += 12
+
+    // Linie
+    pdf.setDrawColor(200, 200, 200)
+    pdf.line(15, yPos, 195, yPos)
+    yPos += 10
+
+    // Kategorie 1: Außen & Technik
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('1️⃣ Außen & Technik', 15, yPos)
+    yPos += 8
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    
+    const section1 = [
+      { label: 'Außenwäsche', value: protocol.exterior_wash },
+      { label: 'Sichtprüfung Karosserie', value: protocol.exterior_inspection },
+      { label: 'Reifen prüfen', value: protocol.tire_check },
+      { label: 'Scheiben & Spiegel', value: protocol.windows_mirrors },
+      { label: 'Markise reinigen', value: protocol.awning_clean },
+      { label: 'Dach / Solarpanels', value: protocol.roof_check },
+      { label: 'Unterboden', value: protocol.underbody_check },
+    ]
+    
+    section1.forEach(item => {
+      const checkbox = item.value ? '☑' : '☐'
+      pdf.text(`${checkbox} ${item.label}`, 20, yPos)
+      yPos += 6
+    })
+    yPos += 5
+
+    // Kategorie 2: Innenraum
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('2️⃣ Innenraum – Reinigung', 15, yPos)
+    yPos += 8
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    
+    const section2 = [
+      { label: 'Komplett saugen', value: protocol.vacuum_interior },
+      { label: 'Boden wischen', value: protocol.mop_floor },
+      { label: 'Küche reinigen', value: protocol.kitchen_clean },
+      { label: 'Kühlschrank', value: protocol.fridge_clean },
+      { label: 'Bad & WC', value: protocol.bathroom_clean },
+      { label: 'WC-Kassette leeren', value: protocol.toilet_empty },
+      { label: 'Mülleimer leeren', value: protocol.trash_empty },
+      { label: 'Fenster innen', value: protocol.windows_inside },
+      { label: 'Geruchskontrolle', value: protocol.odor_check },
+    ]
+    
+    section2.forEach(item => {
+      const checkbox = item.value ? '☑' : '☐'
+      pdf.text(`${checkbox} ${item.label}`, 20, yPos)
+      yPos += 6
+    })
+    yPos += 5
+
+    // Neue Seite wenn nötig
+    if (yPos > 240) {
       pdf.addPage()
       yPos = 20
     }
 
-    pdf.setFontSize(12)
+    // Kategorie 3: Wasser, Gas & Strom
+    pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('Zusätzliche Notizen:', 20, yPos)
-    yPos += 7
-
+    pdf.text('3️⃣ Wasser, Gas & Strom', 15, yPos)
+    yPos += 8
+    pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
-    pdf.setFontSize(9)
-    const splitNotes = pdf.splitTextToSize(protocol.additional_notes, pageWidth - 40)
-    pdf.text(splitNotes, 20, yPos)
-    yPos += splitNotes.length * 5 + 10
-  }
+    
+    const section3 = [
+      { label: 'Frischwassertank', value: protocol.freshwater_fill },
+      { label: 'Abwassertank leeren', value: protocol.wastewater_empty },
+      { label: 'WC-Zusatz', value: protocol.toilet_additive },
+      { label: 'Gasflaschen', value: protocol.gas_check },
+      { label: 'Stromanschluss', value: protocol.power_check },
+      { label: 'Batterie', value: protocol.battery_check },
+    ]
+    
+    section3.forEach(item => {
+      const checkbox = item.value ? '☑' : '☐'
+      pdf.text(`${checkbox} ${item.label}`, 20, yPos)
+      yPos += 6
+    })
+    yPos += 5
 
-  // Unterschriften
-  if (yPos > pageHeight - 80) {
+    // Kategorie 4: Ausstattung & Inventar
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('4️⃣ Ausstattung & Inventar', 15, yPos)
+    yPos += 8
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    
+    const section4 = [
+      { label: 'Geschirr & Besteck', value: protocol.dishes_complete },
+      { label: 'Töpfe, Pfannen', value: protocol.cookware_complete },
+      { label: 'Campingmöbel', value: protocol.camping_furniture },
+      { label: 'Auffahrkeile', value: protocol.ramps },
+      { label: 'Stromkabel', value: protocol.power_cable },
+      { label: 'Wasserschlauch', value: protocol.water_hose },
+      { label: 'Warnweste, Verbandskasten', value: protocol.safety_equipment },
+      { label: 'Bedienungsanleitungen', value: protocol.manuals_present },
+    ]
+    
+    section4.forEach(item => {
+      const checkbox = item.value ? '☑' : '☐'
+      pdf.text(`${checkbox} ${item.label}`, 20, yPos)
+      yPos += 6
+    })
+    yPos += 5
+
+    // Neue Seite
     pdf.addPage()
     yPos = 20
-  }
 
-  pdf.setFontSize(12)
-  pdf.setFont('helvetica', 'bold')
-  pdf.text('Unterschriften:', 20, yPos)
-  yPos += 10
+    // Kategorie 5: Fahrzeug & Sicherheit
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('5️⃣ Fahrzeug & Sicherheit', 15, yPos)
+    yPos += 8
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    
+    pdf.text(`Kilometerstand: ${protocol.mileage} km`, 20, yPos)
+    yPos += 6
+    pdf.text(`Tankstand: ${protocol.fuel_level}`, 20, yPos)
+    yPos += 8
+    
+    const section5 = [
+      { label: 'Ölstand / Kühlwasser', value: protocol.oil_check },
+      { label: 'Fehlermeldungen', value: protocol.warning_lights },
+      { label: 'Reifendruck', value: protocol.tire_pressure },
+      { label: 'Schlüssel vollständig', value: protocol.keys_complete },
+    ]
+    
+    section5.forEach(item => {
+      const checkbox = item.value ? '☑' : '☐'
+      pdf.text(`${checkbox} ${item.label}`, 20, yPos)
+      yPos += 6
+    })
+    yPos += 10
 
-  // Mieter Unterschrift
-  if (protocol.customer_signature) {
-    try {
-      pdf.addImage(protocol.customer_signature, 'PNG', 20, yPos, 80, 30)
-      pdf.setFontSize(9)
+    // Kategorie 6: Dokumentation
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('6️⃣ Dokumentation', 15, yPos)
+    yPos += 8
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+
+    if (protocol.notes) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Notizen / Schäden:', 20, yPos)
+      yPos += 6
       pdf.setFont('helvetica', 'normal')
-      pdf.text('Unterschrift Mieter', 20, yPos + 35)
-    } catch (err) {
-      console.error('Fehler beim Einfügen der Unterschrift:', err)
+      const notesLines = pdf.splitTextToSize(protocol.notes, 170)
+      pdf.text(notesLines, 20, yPos)
+      yPos += (notesLines.length * 6) + 5
     }
-  }
 
-  // Mitarbeiter Unterschrift
-  if (protocol.staff_signature) {
-    try {
-      pdf.addImage(protocol.staff_signature, 'PNG', 110, yPos, 80, 30)
-      pdf.setFontSize(9)
+    if (protocol.special_remarks) {
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Besonderheiten:', 20, yPos)
+      yPos += 6
       pdf.setFont('helvetica', 'normal')
-      pdf.text('Unterschrift Mitarbeiter', 110, yPos + 35)
-    } catch (err) {
-      console.error('Fehler beim Einfügen der Unterschrift:', err)
+      const remarksLines = pdf.splitTextToSize(protocol.special_remarks, 170)
+      pdf.text(remarksLines, 20, yPos)
+      yPos += (remarksLines.length * 6) + 5
     }
+
+    // Fotos
+    if (protocol.damage_photos && protocol.damage_photos.length > 0) {
+      yPos += 5
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(`Fotos: ${protocol.damage_photos.length} Bild(er) aufgenommen`, 20, yPos)
+      yPos += 10
+
+      // Fotos einfügen (2 pro Zeile)
+      let photoX = 20
+      let photoY = yPos
+      const photoWidth = 80
+      const photoHeight = 60
+
+      for (let i = 0; i < protocol.damage_photos.length; i++) {
+        if (photoY + photoHeight > 270) {
+          pdf.addPage()
+          photoY = 20
+        }
+
+        try {
+          pdf.addImage(protocol.damage_photos[i], 'JPEG', photoX, photoY, photoWidth, photoHeight)
+          pdf.setFontSize(8)
+          pdf.text(`Foto ${i + 1}`, photoX, photoY + photoHeight + 4)
+        } catch (e) {
+          console.log('Foto konnte nicht eingefügt werden:', e)
+        }
+
+        if ((i + 1) % 2 === 0) {
+          photoX = 20
+          photoY += photoHeight + 10
+        } else {
+          photoX = 110
+        }
+      }
+
+      yPos = photoY + photoHeight + 15
+    }
+
+    // Neue Seite für Unterschrift
+    if (yPos > 200) {
+      pdf.addPage()
+      yPos = 20
+    }
+
+    yPos += 10
+
+    // Unterschrift
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Unterschrift Mitarbeiter:', 15, yPos)
+    yPos += 10
+
+    if (protocol.employee_signature) {
+      try {
+        pdf.addImage(protocol.employee_signature, 'PNG', 15, yPos, 80, 30)
+      } catch (e) {
+        console.log('Unterschrift konnte nicht eingefügt werden')
+      }
+      yPos += 35
+    }
+
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`${protocol.employee_name}`, 15, yPos)
+    yPos += 5
+    pdf.text(`${cleaningDate.toLocaleDateString('de-DE')}`, 15, yPos)
+
+    // PDF speichern
+    const fileName = `Aufbereitung_${rental.rental_number}_${cleaningDate.toISOString().split('T')[0]}.pdf`
+    pdf.save(fileName)
+
+  } catch (error) {
+    console.error('Fehler beim PDF-Export:', error)
+    throw error
   }
-
-  // Footer
-  pdf.setFontSize(8)
-  pdf.setFont('helvetica', 'italic')
-  pdf.text(
-    `Erstellt am ${new Date().toLocaleDateString('de-DE')} um ${new Date().toLocaleTimeString('de-DE')}`,
-    pageWidth / 2,
-    pageHeight - 10,
-    { align: 'center' }
-  )
-
-  // PDF speichern
-  const filename = `Protokoll_${rental.rental_number}_${protocol.protocol_type}_${new Date().toISOString().split('T')[0]}.pdf`
-  pdf.save(filename)
-}
-
-// Hilfsfunktionen
-function getFuelLevelText(level) {
-  const levels = {
-    full: 'Voll',
-    '3/4': '3/4',
-    '1/2': '1/2',
-    '1/4': '1/4',
-    empty: 'Leer'
-  }
-  return levels[level] || level
-}
-
-function getWaterLevelText(level) {
-  const levels = {
-    full: 'Voll',
-    partial: 'Teilweise',
-    empty: 'Leer'
-  }
-  return levels[level] || level
-}
-
-function getStatusText(status) {
-  const statuses = {
-    good: 'Gut',
-    fair: 'Befriedigend',
-    damaged: 'Mangelhaft',
-    working: 'Funktioniert',
-    defect: 'Defekt'
-  }
-  return statuses[status] || status
-}
-
-function getConditionLabel(key) {
-  const labels = {
-    paint_body: 'Lack/Karosserie',
-    windows_glass: 'Fenster/Scheiben',
-    tires: 'Reifen',
-    lighting: 'Beleuchtung',
-    roof_skylight: 'Dach/Dachluke',
-    doors_locks: 'Türen/Schlösser',
-    awning: 'Markise',
-    trailer_hitch: 'Anhängerkupplung',
-    upholstery_seats: 'Polster/Sitze',
-    carpet_flooring: 'Teppich/Bodenbelag',
-    walls_panels: 'Wände/Verkleidung',
-    windows_blinds: 'Fenster/Rollos',
-    kitchen_stove: 'Küche/Kocher',
-    refrigerator: 'Kühlschrank',
-    heating: 'Heizung',
-    toilet_shower: 'Toilette/Dusche',
-    sink_faucet: 'Waschbecken/Wasserhahn',
-    interior_lighting: 'Beleuchtung (innen)',
-    gas_system: 'Gasanlage',
-    battery_power: 'Batterie/Stromversorgung'
-  }
-  return labels[key] || key
 }
