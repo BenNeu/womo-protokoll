@@ -210,8 +210,8 @@ const ContractForm = () => {
                 value={form.rental_start_date}
                 onChange={(e) => {
                   handleChange(e)
-                  setTimeout(calculateDays, 0)
                 }}
+                onBlur={calculateDays}
                 required 
               />
             </div>
@@ -223,15 +223,15 @@ const ContractForm = () => {
                 value={form.rental_end_date}
                 onChange={(e) => {
                   handleChange(e)
-                  setTimeout(calculateDays, 0)
                 }}
+                onBlur={calculateDays}
                 required 
               />
             </div>
           </div>
 
           <div className="form-row">
-            <div className="form-group">
+           <div className="form-group">
               <label>Tagessatz (EUR)</label>
               <input 
                 name="daily_rate"
@@ -240,8 +240,8 @@ const ContractForm = () => {
                 value={form.daily_rate}
                 onChange={(e) => {
                   handleChange(e)
-                  setTimeout(() => calculateTotal(), 0)
                 }}
+                onBlur={() => calculateTotal()}
               />
             </div>
             <div className="form-group">
