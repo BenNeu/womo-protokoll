@@ -7,6 +7,33 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.contract-list .header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.contract-list .header-left h2 {
+  margin: 0;
+}
+
+.contract-list .btn-back {
+  background: #6b7280;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.contract-list .btn-back:hover {
+  background: #4b5563;
 }
 
 .contract-list .btn-primary {

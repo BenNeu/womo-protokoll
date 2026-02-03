@@ -47,8 +47,13 @@ const ContractList = () => {
 
   return (
     <div className="contract-list">
-      <div className="header">
-        <h2>Mietverträge</h2>
+       <div className="header">
+        <div className="header-left">
+          <button onClick={() => navigate('/admin')} className="btn-back">
+            ← Zurück zur Verwaltung
+          </button>
+          <h2>Mietverträge</h2>
+        </div>
         <button 
           onClick={() => navigate('/contracts/new')} 
           className="btn-primary"
