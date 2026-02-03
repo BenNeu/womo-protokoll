@@ -2,14 +2,14 @@
   padding: 20px;
 }
 
-.header {
+.contract-list .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
 }
 
-.btn-primary {
+.contract-list .btn-primary {
   background: #007bff;
   color: white;
   padding: 10px 20px;
@@ -19,17 +19,18 @@
   font-size: 14px;
 }
 
-.btn-primary:hover {
+.contract-list .btn-primary:hover {
   background: #0056b3;
 }
 
-.loading, .error {
+.contract-list .loading,
+.contract-list .error {
   text-align: center;
   padding: 40px;
   font-size: 16px;
 }
 
-.error {
+.contract-list .error {
   color: red;
 }
 
@@ -52,62 +53,62 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.contract-header {
+.contract-card .contract-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
 }
 
-.contract-number {
+.contract-card .contract-number {
   font-weight: bold;
   color: #666;
   font-size: 14px;
 }
 
-.status {
+.contract-card .status {
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
 }
 
-.status.draft { 
+.contract-card .status.draft { 
   background: #ffd700; 
   color: #000; 
 }
 
-.status.signed { 
+.contract-card .status.signed { 
   background: #28a745; 
   color: white; 
 }
 
-.status.active { 
+.contract-card .status.active { 
   background: #007bff; 
   color: white; 
 }
 
-.status.completed { 
+.contract-card .status.completed { 
   background: #6c757d; 
   color: white; 
 }
 
-.contract-info h3 {
+.contract-card .contract-info h3 {
   margin: 0 0 10px 0;
   font-size: 18px;
 }
 
-.contract-info p {
+.contract-card .contract-info p {
   margin: 5px 0;
   color: #333;
 }
 
-.dates {
+.contract-card .dates {
   color: #666;
   font-size: 14px;
 }
 
-.amount {
+.contract-card .amount {
   font-size: 18px;
   font-weight: bold;
   color: #007bff;
