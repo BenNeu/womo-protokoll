@@ -214,6 +214,9 @@ export default function AdminPage() {
         <button onClick={() => navigate('/admin/new')} style={styles.newButton}>
           + Neuer Mietvorgang
         </button>
+        <button onClick={() => navigate('/contracts')} style={styles.contractsButton}>
+          📄 Mietverträge
+        </button>
       </div>
 
       <div style={styles.filterSection}>
@@ -420,6 +423,16 @@ const styles = {
     padding: '12px 24px',
     fontSize: '16px',
     backgroundColor: '#10b981',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: '600',
+  },
+  contractsButton: {
+    padding: '12px 24px',
+    fontSize: '16px',
+    backgroundColor: '#3b82f6',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
