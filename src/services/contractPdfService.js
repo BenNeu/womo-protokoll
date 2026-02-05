@@ -34,7 +34,7 @@ export const generateContractPDF = async (contractId) => {
     
     // Zusätzliche Fahrer formatieren
     let additionalDriversText = 'Keine weiteren Fahrer'
-    if (contract.additional_drivers && Array.isArray(contract.additional_drivers)) {
+    if (contract.additional_drivers && Array.isArray(contract.additional_drivers) && contract.additional_drivers.length > 0) {
       additionalDriversText = contract.additional_drivers.map(driver => 
         `${driver.name}, ${driver.address}, Führerschein-Nr.: ${driver.license}`
       ).join('<br>')
@@ -47,14 +47,13 @@ export const generateContractPDF = async (contractId) => {
       Object.keys(contract.additional_services).forEach(key => {
         services.push(`${key}: ${contract.additional_services[key]} EUR`)
       })
-      additionalServicesText = services.join(', ')
+      if (services.length > 0) {
+        additionalServicesText = services.join(', ')
+      }
     }
     
-    // Unbegrenzte Kilometer Text
-    let unlimitedKmText = ''
-    if (contract.unlimited_km_option) {
-      unlimitedKmText = `Der Mieter hat die Option für unbegrenzte Kilometer gebucht (${contract.unlimited_km_fee} EUR). Alle Mehrkilometerkosten entfallen.`
-    }
+    // Rental Total berechnen
+    const rentalTotal = (contract.daily_rate || 0) * (contract.rental_days || 0)
     
     const replacements = {
       contract_number: contract.contract_number || '',
@@ -83,6 +82,7 @@ export const generateContractPDF = async (contractId) => {
       
       // Preise
       daily_rate: contract.daily_rate || 0,
+      rental_total: rentalTotal,
       total_amount: contract.total_amount || 0,
       service_fee: contract.service_fee || 0,
       deposit_amount: contract.deposit_amount || 0,
@@ -90,9 +90,9 @@ export const generateContractPDF = async (contractId) => {
       
       // Zahlungen
       down_payment: contract.down_payment || 0,
-      down_payment_due_date: contract.down_payment_due_date ? new Date(contract.down_payment_due_date).toLocaleDateString('de-DE') : '',
+      down_payment_due_date: contract.down_payment_due_date ? new Date(contract.down_payment_due_date).toLocaleDateString('de-DE') : '[Datum]',
       final_payment: contract.final_payment || 0,
-      final_payment_due_date: contract.final_payment_due_date ? new Date(contract.final_payment_due_date).toLocaleDateString('de-DE') : '',
+      final_payment_due_date: contract.final_payment_due_date ? new Date(contract.final_payment_due_date).toLocaleDateString('de-DE') : '[Datum]',
       
       // Bank
       bank_account_holder: contract.bank_account_holder || 'Andreas Grimm und Ben Neuendorf GbR',
@@ -120,7 +120,7 @@ export const generateContractPDF = async (contractId) => {
       // Kilometer
       included_km: contract.included_km || 250,
       extra_km_rate: contract.extra_km_rate || 0.35,
-      unlimited_km_text: unlimitedKmText
+      unlimited_km_fee: contract.unlimited_km_fee || 240.00
     }
     
     // Alle Platzhalter ersetzen
