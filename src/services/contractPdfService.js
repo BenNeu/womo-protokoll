@@ -1,4 +1,6 @@
 import { supabase } from './supabaseClient'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 export const generateContractPDF = async (contractId) => {
   try {
@@ -59,34 +61,73 @@ export const generateContractPDF = async (contractId) => {
       html = html.replace(regex, replacements[key])
     })
     
-    // Unterschrift einfügen
+    // Unterschriften einfügen
     const tenantSignature = signatures.find(s => s.signer_type === 'tenant')
     if (tenantSignature) {
       html = html.replace(
         '{{signature_tenant}}',
-        `<img src="${tenantSignature.signature_data}" class="signature-img" alt="Unterschrift Mieter" /><br><p>${tenantSignature.signer_name}</p>`
+        `<img src="${tenantSignature.signature_data}" style="max-width: 200px; max-height: 80px;" alt="Unterschrift Mieter" /><br><p>${tenantSignature.signer_name}</p>`
       )
     } else {
       html = html.replace('{{signature_tenant}}', '<p>Nicht unterschrieben</p>')
     }
     
-    // 5. PDF erstellen
-    const { jsPDF } = window.jspdf
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
+    const landlordSignature = signatures.find(s => s.signer_type === 'landlord')
+    if (landlordSignature) {
+      html = html.replace(
+        '{{signature_landlord}}',
+        `<img src="${landlordSignature.signature_data}" style="max-width: 200px; max-height: 80px;" alt="Unterschrift Vermieter" /><br><p>${landlordSignature.signer_name}</p>`
+      )
+    } else {
+      html = html.replace('{{signature_landlord}}', '<p>Nicht unterschrieben</p>')
+    }
+    
+    // 5. HTML in temporäres Element rendern
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = html
+    tempDiv.style.position = 'absolute'
+    tempDiv.style.left = '-9999px'
+    tempDiv.style.width = '210mm'
+    tempDiv.style.padding = '20mm'
+    tempDiv.style.fontFamily = 'Arial, sans-serif'
+    tempDiv.style.fontSize = '12pt'
+    tempDiv.style.lineHeight = '1.6'
+    document.body.appendChild(tempDiv)
+    
+    // 6. Canvas erstellen
+    const canvas = await html2canvas(tempDiv, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff'
     })
     
-    await doc.html(html, {
-      callback: function(doc) {
-        doc.save(`Mietvertrag_${contract.contract_number}_${contract.customer_name}.pdf`)
-      },
-      x: 10,
-      y: 10,
-      width: 190,
-      windowWidth: 800
-    })
+    // 7. PDF generieren
+    const imgData = canvas.toDataURL('image/png')
+    const pdf = new jsPDF('p', 'mm', 'a4')
+    const imgWidth = 210
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    
+    let heightLeft = imgHeight
+    let position = 0
+    
+    // Erste Seite
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+    heightLeft -= 297
+    
+    // Weitere Seiten wenn nötig
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight
+      pdf.addPage()
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= 297
+    }
+    
+    // 8. PDF herunterladen
+    pdf.save(`Mietvertrag_${contract.contract_number}_${contract.customer_name}.pdf`)
+    
+    // 9. Temporäres Element entfernen
+    document.body.removeChild(tempDiv)
     
     return true
   } catch (err) {
