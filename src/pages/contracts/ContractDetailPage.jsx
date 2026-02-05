@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { fetchContract, generateContractPDF } from '../../services/contractService'
+import { fetchContract } from '../../services/contractService'
+import { generateContractPDF } from '../../services/contractPdfService'
 import ContractSignature from '../../components/contracts/ContractSignature'
 import './ContractDetailPage.css'
 
@@ -34,7 +35,7 @@ const ContractDetailPage = () => {
   }
 
   const handleSignatureComplete = () => {
-    loadContract() // Vertrag neu laden nach Unterschrift
+    loadContract()
   }
 
   const handleDownloadPDF = async () => {
