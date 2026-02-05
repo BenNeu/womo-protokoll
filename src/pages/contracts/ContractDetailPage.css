@@ -74,7 +74,7 @@
   flex-wrap: wrap;
 }
 
-.btn-primary, .btn-secondary {
+.btn-primary, .btn-secondary, .btn-pdf {
   padding: 12px 24px;
   border: none;
   border-radius: 5px;
@@ -99,6 +99,20 @@
 
 .btn-secondary:hover {
   background: #5a6268;
+}
+
+.btn-pdf {
+  background: #8b5cf6;
+  color: white;
+}
+
+.btn-pdf:hover {
+  background: #7c3aed;
+}
+
+.btn-pdf:disabled {
+  background: #ccc;
+  cursor: not-allowed;
 }
 
 .signature-section {
@@ -130,25 +144,7 @@
     flex-direction: column;
   }
   
-  .btn-primary, .btn-secondary {
+  .btn-primary, .btn-secondary, .btn-pdf {
     width: 100%;
   }
-.btn-pdf {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  background: #8b5cf6;
-  color: white;
-}
-
-.btn-pdf:hover {
-  background: #7c3aed;
-}
-
-.btn-pdf:disabled {
-  background: #ccc;
-  cursor: not-allowed;
 }
