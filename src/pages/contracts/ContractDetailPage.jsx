@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { fetchContract } from '../../services/contractService'
+import { fetchContract, generateContractPDF } from '../../services/contractService'
 import ContractSignature from '../../components/contracts/ContractSignature'
 import './ContractDetailPage.css'
 
@@ -35,6 +35,19 @@ const ContractDetailPage = () => {
 
   const handleSignatureComplete = () => {
     loadContract() // Vertrag neu laden nach Unterschrift
+  }
+
+  const handleDownloadPDF = async () => {
+    try {
+      setLoading(true)
+      await generateContractPDF(id)
+      alert('PDF wird heruntergeladen...')
+    } catch (err) {
+      console.error('PDF Error:', err)
+      alert('Fehler beim PDF-Export: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (loading) return <div className="loading">Lädt...</div>
@@ -102,6 +115,11 @@ const ContractDetailPage = () => {
         <button onClick={() => navigate(`/contracts/${id}/edit`)} className="btn-secondary">
           Bearbeiten
         </button>
+        {contract.status === 'signed' && (
+          <button onClick={handleDownloadPDF} className="btn-pdf" disabled={loading}>
+            📄 PDF herunterladen
+          </button>
+        )}
         <button 
           onClick={() => setShowSignature(!showSignature)} 
           className="btn-primary"
