@@ -27,7 +27,7 @@ export const fetchContracts = async () => {
 export const fetchContract = async (id) => {
   const { data, error } = await supabase
     .from('OrcaCampers_rental_contracts')
-    .select('*')  // Erstmal nur den Vertrag ohne Signaturen
+    .select('*')
     .eq('id', id)
     .single()
   
@@ -120,7 +120,9 @@ export const saveSignature = async (contractId, signerType, signerName, signatur
   }
   
   return data
-  // PDF Export für Mietvertrag
+} // ← Dieses } hat gefehlt!
+
+// PDF Export für Mietvertrag
 export const generateContractPDF = async (contractId) => {
   try {
     // 1. Vertrag laden
@@ -192,4 +194,23 @@ export const generateContractPDF = async (contractId) => {
     } else {
       html = html.replace('{{signature_tenant}}', '<p>Nicht unterschrieben</p>')
     }
+    
+    // Unterschrift des Vermieters einfügen
+    const landlordSignature = signatures.find(s => s.signer_type === 'landlord')
+    if (landlordSignature) {
+      html = html.replace(
+        '{{signature_landlord}}',
+        `<img src="${landlordSignature.signature_data}" class="signature-img" alt="Unterschrift Vermieter" /><br><p>${landlordSignature.signer_name}</p>`
+      )
+    } else {
+      html = html.replace('{{signature_landlord}}', '<p>Nicht unterschrieben</p>')
+    }
+    
+    // 5. HTML zurückgeben (wird dann im Frontend zu PDF konvertiert)
+    return html
+    
+  } catch (error) {
+    console.error('Fehler beim PDF-Export:', error)
+    throw error
+  }
 }
