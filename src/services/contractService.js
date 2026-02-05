@@ -192,30 +192,4 @@ export const generateContractPDF = async (contractId) => {
     } else {
       html = html.replace('{{signature_tenant}}', '<p>Nicht unterschrieben</p>')
     }
-    
-    // 5. PDF erstellen mit jspdf
-    const { jsPDF } = window.jspdf
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    })
-    
-    // HTML zu PDF
-    await doc.html(html, {
-      callback: function(doc) {
-        doc.save(`Mietvertrag_${contract.contract_number}_${contract.customer_name}.pdf`)
-      },
-      x: 10,
-      y: 10,
-      width: 190,
-      windowWidth: 800
-    })
-    
-    return true
-  } catch (err) {
-    console.error('PDF Generation Error:', err)
-    throw err
-  }
-}
 }
