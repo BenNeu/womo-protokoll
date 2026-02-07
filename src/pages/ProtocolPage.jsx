@@ -63,14 +63,16 @@ export default function ProtocolPage() {
     damage_notes: '',
     additional_notes: '',
     photo_urls: [],
+    id_card_photo: null,
+    drivers_license_photo: null,
     customer_signature: null,
     staff_signature: null
   })
 
   useEffect(() => {
-  loadRental()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [rentalId, type])
+    loadRental()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rentalId, type])
 
   const loadRental = async () => {
     const { data, error } = await supabase
@@ -93,6 +95,27 @@ export default function ProtocolPage() {
       ...formData,
       photo_urls: [...formData.photo_urls, url]
     })
+  }
+
+  const handleDocumentPhotoUpload = async (e, fieldName) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: reader.result
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeDocumentPhoto = (fieldName) => {
+    setFormData(prev => ({
+      ...prev,
+      [fieldName]: null
+    }))
   }
 
   const handleCustomerSignature = (dataUrl) => {
@@ -138,6 +161,8 @@ export default function ProtocolPage() {
           damage_notes: formData.damage_notes,
           additional_notes: formData.additional_notes,
           photo_urls: formData.photo_urls,
+          id_card_photo: formData.id_card_photo,
+          drivers_license_photo: formData.drivers_license_photo,
           customer_signature: formData.customer_signature,
           staff_signature: formData.staff_signature
         })
@@ -297,8 +322,57 @@ export default function ProtocolPage() {
         </div>
       ))}
 
+      {/* Ausweisdokumente des Mieters */}
+      <h2 style={styles.sectionTitle}>Ausweisdokumente des Mieters</h2>
+      
+      <div style={styles.section}>
+        <label style={styles.label}>Personalausweis (Vorder- und Rückseite):</label>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => handleDocumentPhotoUpload(e, 'id_card_photo')}
+          style={styles.fileInput}
+        />
+        {formData.id_card_photo && (
+          <div style={styles.documentPhotoPreview}>
+            <img src={formData.id_card_photo} alt="Personalausweis" style={styles.documentPhoto} />
+            <button 
+              type="button"
+              onClick={() => removeDocumentPhoto('id_card_photo')}
+              style={styles.removePhotoButton}
+            >
+              ✕ Entfernen
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={styles.section}>
+        <label style={styles.label}>Führerschein (Vorder- und Rückseite):</label>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => handleDocumentPhotoUpload(e, 'drivers_license_photo')}
+          style={styles.fileInput}
+        />
+        {formData.drivers_license_photo && (
+          <div style={styles.documentPhotoPreview}>
+            <img src={formData.drivers_license_photo} alt="Führerschein" style={styles.documentPhoto} />
+            <button 
+              type="button"
+              onClick={() => removeDocumentPhoto('drivers_license_photo')}
+              style={styles.removePhotoButton}
+            >
+              ✕ Entfernen
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Fotos */}
-      <h2 style={styles.sectionTitle}>Fotos</h2>
+      <h2 style={styles.sectionTitle}>Fahrzeugfotos</h2>
       <PhotoCapture 
         protocolId={rentalId}
         onPhotoAdded={handlePhotoAdded}
@@ -518,6 +592,43 @@ const styles = {
     fontSize: '14px',
     color: '#374151',
     flex: 1,
+  },
+  fileInput: {
+    width: '100%',
+    padding: '12px',
+    fontSize: '16px',
+    border: '2px dashed #d1d5db',
+    borderRadius: '8px',
+    backgroundColor: 'white',
+    cursor: 'pointer',
+    boxSizing: 'border-box',
+  },
+  documentPhotoPreview: {
+    marginTop: '15px',
+    padding: '15px',
+    backgroundColor: '#f0fdf4',
+    borderRadius: '8px',
+    border: '1px solid #86efac',
+    position: 'relative',
+  },
+  documentPhoto: {
+    maxWidth: '100%',
+    maxHeight: '300px',
+    borderRadius: '8px',
+    display: 'block',
+    margin: '0 auto',
+  },
+  removePhotoButton: {
+    marginTop: '10px',
+    padding: '8px 16px',
+    backgroundColor: '#ef4444',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    fontWeight: '600',
+    width: '100%',
   },
   photoGrid: {
     display: 'grid',
