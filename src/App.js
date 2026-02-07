@@ -7,6 +7,7 @@ import CleaningProtocolPage from './pages/CleaningProtocolPage'
 import ContractsPage from './pages/contracts/ContractsPage'
 import ContractFormPage from './pages/contracts/ContractFormPage'
 import ContractDetailPage from './pages/contracts/ContractDetailPage'
+import VehiclesPage from './pages/VehiclesPage'
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/contracts/new" element={<ContractFormPage />} />
         <Route path="/contracts/:id" element={<ContractDetailPage />} />
         <Route path="/contracts/:id/edit" element={<ContractFormPage />} />
+        <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
