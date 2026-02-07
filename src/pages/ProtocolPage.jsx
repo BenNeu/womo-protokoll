@@ -97,27 +97,6 @@ export default function ProtocolPage() {
     })
   }
 
-  const handleDocumentPhotoUpload = async (e, fieldName) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setFormData(prev => ({
-        ...prev,
-        [fieldName]: reader.result
-      }))
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const removeDocumentPhoto = (fieldName) => {
-    setFormData(prev => ({
-      ...prev,
-      [fieldName]: null
-    }))
-  }
-
   const handleCustomerSignature = (dataUrl) => {
     setFormData({
       ...formData,
@@ -324,22 +303,20 @@ export default function ProtocolPage() {
 
       {/* Ausweisdokumente des Mieters */}
       <h2 style={styles.sectionTitle}>Ausweisdokumente des Mieters</h2>
-      
+
       <div style={styles.section}>
         <label style={styles.label}>Personalausweis (Vorder- und Rückseite):</label>
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => handleDocumentPhotoUpload(e, 'id_card_photo')}
-          style={styles.fileInput}
+        <PhotoCapture 
+          protocolId={`${rentalId}-id-card`}
+          onPhotoAdded={(url) => setFormData(prev => ({...prev, id_card_photo: url}))}
+          label="📸 Personalausweis fotografieren"
         />
         {formData.id_card_photo && (
           <div style={styles.documentPhotoPreview}>
             <img src={formData.id_card_photo} alt="Personalausweis" style={styles.documentPhoto} />
             <button 
               type="button"
-              onClick={() => removeDocumentPhoto('id_card_photo')}
+              onClick={() => setFormData(prev => ({...prev, id_card_photo: null}))}
               style={styles.removePhotoButton}
             >
               ✕ Entfernen
@@ -350,19 +327,17 @@ export default function ProtocolPage() {
 
       <div style={styles.section}>
         <label style={styles.label}>Führerschein (Vorder- und Rückseite):</label>
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => handleDocumentPhotoUpload(e, 'drivers_license_photo')}
-          style={styles.fileInput}
+        <PhotoCapture 
+          protocolId={`${rentalId}-drivers-license`}
+          onPhotoAdded={(url) => setFormData(prev => ({...prev, drivers_license_photo: url}))}
+          label="📸 Führerschein fotografieren"
         />
         {formData.drivers_license_photo && (
           <div style={styles.documentPhotoPreview}>
             <img src={formData.drivers_license_photo} alt="Führerschein" style={styles.documentPhoto} />
             <button 
               type="button"
-              onClick={() => removeDocumentPhoto('drivers_license_photo')}
+              onClick={() => setFormData(prev => ({...prev, drivers_license_photo: null}))}
               style={styles.removePhotoButton}
             >
               ✕ Entfernen
@@ -592,16 +567,6 @@ const styles = {
     fontSize: '14px',
     color: '#374151',
     flex: 1,
-  },
-  fileInput: {
-    width: '100%',
-    padding: '12px',
-    fontSize: '16px',
-    border: '2px dashed #d1d5db',
-    borderRadius: '8px',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    boxSizing: 'border-box',
   },
   documentPhotoPreview: {
     marginTop: '15px',
