@@ -19,7 +19,9 @@ export default function VehiclesPage() {
       .order('manufacturer', { ascending: true })
 
     if (error) {
+      console.error('Fehler beim Laden:', error)
       alert('Fehler: ' + error.message)
+      setLoading(false)
       return
     }
 
@@ -28,23 +30,23 @@ export default function VehiclesPage() {
   }
 
   const getStatusBadge = (status) => {
-    const styles = {
+    const statusConfig = {
       available: { bg: '#10b981', text: 'Verfügbar' },
       rented: { bg: '#f59e0b', text: 'Vermietet' },
       maintenance: { bg: '#ef4444', text: 'Wartung' },
       retired: { bg: '#6b7280', text: 'Außer Betrieb' }
     }
-    const style = styles[status] || styles.available
+    const config = statusConfig[status] || statusConfig.available
     return (
       <span style={{
-        backgroundColor: style.bg,
+        backgroundColor: config.bg,
         color: 'white',
         padding: '4px 12px',
         borderRadius: '12px',
         fontSize: '12px',
         fontWeight: '600'
       }}>
-        {style.text}
+        {config.text}
       </span>
     )
   }
@@ -100,11 +102,11 @@ export default function VehiclesPage() {
               
               {vehicle.equipment && (
                 <div style={styles.equipment}>
-                  {JSON.parse(vehicle.equipment).slice(0, 3).map((item, i) => (
+                  {vehicle.equipment.slice(0, 3).map((item, i) => (
                     <span key={i} style={styles.equipmentTag}>{item}</span>
                   ))}
-                  {JSON.parse(vehicle.equipment).length > 3 && (
-                    <span style={styles.equipmentTag}>+{JSON.parse(vehicle.equipment).length - 3}</span>
+                  {vehicle.equipment.length > 3 && (
+                    <span style={styles.equipmentTag}>+{vehicle.equipment.length - 3}</span>
                   )}
                 </div>
               )}
@@ -124,6 +126,12 @@ export default function VehiclesPage() {
           </button>
         </div>
       )}
+
+      <div style={styles.backButton}>
+        <button onClick={() => navigate('/')} style={styles.backButtonStyle}>
+          ← Zurück zur Startseite
+        </button>
+      </div>
     </div>
   )
 }
@@ -133,6 +141,8 @@ const styles = {
     maxWidth: '1200px',
     margin: '0 auto',
     padding: '20px',
+    backgroundColor: '#f9fafb',
+    minHeight: '100vh',
   },
   header: {
     display: 'flex',
@@ -159,6 +169,7 @@ const styles = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
     gap: '20px',
+    marginBottom: '30px',
   },
   card: {
     backgroundColor: 'white',
@@ -166,11 +177,6 @@ const styles = {
     overflow: 'hidden',
     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
     cursor: 'pointer',
-    transition: 'transform 0.2s, box-shadow 0.2s',
-    ':hover': {
-      transform: 'translateY(-4px)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    }
   },
   photo: {
     width: '100%',
@@ -230,6 +236,20 @@ const styles = {
     marginTop: '20px',
     padding: '12px 24px',
     backgroundColor: '#3b82f6',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  backButton: {
+    textAlign: 'center',
+    marginTop: '30px',
+  },
+  backButtonStyle: {
+    padding: '12px 24px',
+    backgroundColor: '#6b7280',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
