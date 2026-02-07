@@ -57,8 +57,14 @@ export default function StartPage() {
         <p style={styles.subtitle}>Digitales Protokoll für Abholung und Rückgabe</p>
       </div>
 
-      <div style={styles.adminButton}>
-        <button onClick={() => navigate('/admin')} style={styles.adminButtonStyle}>
+      <div style={styles.buttonRow}>
+        <button onClick={() => navigate('/vehicles')} style={styles.navButton}>
+          🚗 Fahrzeuge
+        </button>
+        <button onClick={() => navigate('/contracts')} style={styles.navButton}>
+          📄 Verträge
+        </button>
+        <button onClick={() => navigate('/admin')} style={styles.navButton}>
           ⚙️ Verwaltung
         </button>
       </div>
@@ -161,11 +167,14 @@ const styles = {
     color: '#6b7280',
     margin: '10px 0 0 0',
   },
-  adminButton: {
-    textAlign: 'center',
-    marginBottom: '20px',
+  buttonRow: {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: '15px',
+    marginBottom: '30px',
+    flexWrap: 'wrap',
   },
-  adminButtonStyle: {
+  navButton: {
     padding: '12px 24px',
     fontSize: '16px',
     backgroundColor: '#3b82f6',
@@ -174,6 +183,7 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     fontWeight: '600',
+    transition: 'background-color 0.2s',
   },
   card: {
     maxWidth: '600px',
