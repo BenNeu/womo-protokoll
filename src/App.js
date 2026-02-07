@@ -8,6 +8,7 @@ import ContractsPage from './pages/contracts/ContractsPage'
 import ContractFormPage from './pages/contracts/ContractFormPage'
 import ContractDetailPage from './pages/contracts/ContractDetailPage'
 import VehiclesPage from './pages/VehiclesPage'
+import VehicleFormPage from './pages/VehicleFormPage'
 
 function App() {
   return (
@@ -25,6 +26,8 @@ function App() {
         <Route path="/contracts/:id/edit" element={<ContractFormPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/vehicles/new" element={<VehicleFormPage />} />
+        <Route path="/vehicles/:id/edit" element={<VehicleFormPage />} /> 
       </Routes>
     </BrowserRouter>
   )
