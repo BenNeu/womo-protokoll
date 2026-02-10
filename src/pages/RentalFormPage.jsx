@@ -27,11 +27,11 @@ export default function RentalFormPage() {
   })
 
   useEffect(() => {
-  if (isEdit) {
-    loadRental()
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [id])
+    if (isEdit) {
+      loadRental()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
 
   const loadRental = async () => {
     const { data, error } = await supabase
@@ -44,7 +44,17 @@ export default function RentalFormPage() {
       alert('Fehler beim Laden: ' + error.message)
       navigate('/admin')
     } else {
-      setFormData(data)
+      // Datum formatieren für date-input (YYYY-MM-DD)
+      const formatDate = (dateString) => {
+        if (!dateString) return ''
+        return dateString.split(' ')[0] // "2026-02-10 14:00:00" → "2026-02-10"
+      }
+      
+      setFormData({
+        ...data,
+        start_date: formatDate(data.start_date),
+        end_date: formatDate(data.end_date)
+      })
     }
     setLoading(false)
   }
@@ -151,6 +161,8 @@ export default function RentalFormPage() {
             >
               <option value="active">Aktiv</option>
               <option value="completed">Abgeschlossen</option>
+              <option value="confirmed">Bestätigt</option>
+              <option value="pending">Ausstehend</option>
             </select>
           </div>
         </div>
