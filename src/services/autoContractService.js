@@ -16,13 +16,10 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       return existingContract
     }
 
-    // 2. Hole Buchungsdaten mit Fahrzeug
+    // 2. Hole Buchungsdaten (Fahrzeug-Daten sind schon drin!)
     const { data: rental, error: rentalError } = await supabase
       .from('OrcaCampers_rentals')
-      .select(`
-        *,
-        OrcaCampers_vehicles (*)
-      `)
+      .select('*')
       .eq('id', rentalId)
       .single()
 
@@ -32,18 +29,14 @@ export const autoCreateContractFromBooking = async (rentalId) => {
     console.log('📦 Buchungsdaten geladen:', rental.rental_number)
 
     // 3. Berechne Tage
-    const startDate = new Date(rental.rental_start_date)
-    const endDate = new Date(rental.rental_end_date)
+    const startDate = new Date(rental.start_date)
+    const endDate = new Date(rental.end_date)
     const rentalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
 
     // 4. Berechne Preise
-    const vehicle = rental.OrcaCampers_vehicles
-    const dailyRate = rental.daily_rate || vehicle?.daily_rate_default || 150.00
-    const rentalTotal = dailyRate * rentalDays
-    const serviceFee = rental.service_fee || 50.00
-    const depositAmount = rental.deposit_amount || vehicle?.deposit_amount || 1500.00
-    const totalAmount = rentalTotal + serviceFee
-
+    const totalAmount = parseFloat(rental.total_price || 0)
+    const depositAmount = 1500.00
+    
     // Anzahlung (30%) und Restzahlung
     const downPayment = Math.round(totalAmount * 0.3 * 100) / 100
     const finalPayment = totalAmount - downPayment
@@ -57,31 +50,25 @@ export const autoCreateContractFromBooking = async (rentalId) => {
     // 5. Erstelle Vertrag mit allen Daten
     const contractData = {
       rental_id: rentalId,
-      vehicle_id: rental.vehicle_id,
       contract_number: `WM-${Date.now()}`,
       
       customer_name: rental.customer_name || '',
       customer_email: rental.customer_email || '',
       customer_phone: rental.customer_phone || '',
       customer_address: rental.customer_address || '',
-      customer_id_number: rental.customer_id_number || '',
-      customer_drivers_license: rental.customer_drivers_license || '',
       
-      vehicle_manufacturer: vehicle?.manufacturer || '',
-      vehicle_model: vehicle?.model || '',
-      vehicle_registration: rental.vehicle_license_plate || vehicle?.license_plate || '',
-      vehicle_vin: vehicle?.vin || '',
-      rental_start_mileage: vehicle?.mileage || 0,
-      vehicle_equipment: vehicle?.equipment ? vehicle.equipment.join(', ') : 'Standardausstattung',
+      vehicle_manufacturer: rental.vehicle_manufacturer || '',
+      vehicle_model: rental.vehicle_model || '',
+      vehicle_registration: rental.vehicle_license_plate || '',
+      vehicle_vin: rental.vehicle_vin || '',
       
-      rental_start_date: rental.rental_start_date,
-      rental_end_date: rental.rental_end_date,
-      rental_start_time: '10:00',
+      rental_start_date: rental.start_date,
+      rental_end_date: rental.end_date,
+      rental_start_time: '14:00',
       rental_end_time: '10:00',
       rental_days: rentalDays,
       
-      daily_rate: dailyRate,
-      service_fee: serviceFee,
+      daily_rate: totalAmount / rentalDays,
       total_amount: totalAmount,
       deposit_amount: depositAmount,
       
@@ -99,7 +86,6 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       deductible_full_coverage: 1500.00,
       deductible_partial_coverage: 1500.00,
       
-      additional_drivers: rental.additional_drivers || [],
       permitted_countries: 'EU (ohne Zypern), Albanien, Andorra, Großbritannien, Schottland, Liechtenstein, Monaco, Norwegen, San Marino, Schweiz',
       
       fee_professional_cleaning: 139.00,
@@ -111,7 +97,7 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       
       included_km: 250,
       extra_km_rate: 0.35,
-      unlimited_km_option: rental.unlimited_km_option || false,
+      unlimited_km_option: false,
       unlimited_km_fee: 240.00,
       
       status: 'draft',
