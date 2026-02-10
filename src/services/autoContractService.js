@@ -9,14 +9,14 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       .from('OrcaCampers_rental_contracts')
       .select('id, contract_number')
       .eq('rental_id', rentalId)
-      .single()
+      .maybeSingle()
 
     if (existingContract) {
       console.log('✅ Vertrag existiert bereits:', existingContract.contract_number)
       return existingContract
     }
 
-    // 2. Hole Buchungsdaten (Fahrzeug-Daten sind schon drin!)
+    // 2. Hole Buchungsdaten (alle Daten sind direkt in der Rental-Tabelle!)
     const { data: rental, error: rentalError } = await supabase
       .from('OrcaCampers_rentals')
       .select('*')
@@ -36,6 +36,7 @@ export const autoCreateContractFromBooking = async (rentalId) => {
     // 4. Berechne Preise
     const totalAmount = parseFloat(rental.total_price || 0)
     const depositAmount = 1500.00
+    const dailyRate = rentalDays > 0 ? totalAmount / rentalDays : 0
     
     // Anzahlung (30%) und Restzahlung
     const downPayment = Math.round(totalAmount * 0.3 * 100) / 100
@@ -52,23 +53,27 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       rental_id: rentalId,
       contract_number: `WM-${Date.now()}`,
       
+      // Kundendaten
       customer_name: rental.customer_name || '',
       customer_email: rental.customer_email || '',
       customer_phone: rental.customer_phone || '',
       customer_address: rental.customer_address || '',
       
+      // Fahrzeugdaten
       vehicle_manufacturer: rental.vehicle_manufacturer || '',
       vehicle_model: rental.vehicle_model || '',
       vehicle_registration: rental.vehicle_license_plate || '',
       vehicle_vin: rental.vehicle_vin || '',
       
+      // Mietdaten
       rental_start_date: rental.start_date,
       rental_end_date: rental.end_date,
       rental_start_time: '14:00',
       rental_end_time: '10:00',
       rental_days: rentalDays,
       
-      daily_rate: totalAmount / rentalDays,
+      // Preise
+      daily_rate: dailyRate,
       total_amount: totalAmount,
       deposit_amount: depositAmount,
       
@@ -77,17 +82,21 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       final_payment: finalPayment,
       final_payment_due_date: finalPaymentDueDate.toISOString().split('T')[0],
       
+      // Bankdaten
       bank_account_holder: 'Andreas Grimm und Ben Neuendorf GbR',
       bank_iban: 'DE89370400440532013000',
       bank_bic: 'COBADEFFXXX',
       bank_name: 'Commerzbank',
       
+      // Versicherung
       insurance_package: 'Vollkasko',
       deductible_full_coverage: 1500.00,
       deductible_partial_coverage: 1500.00,
       
+      // Länder
       permitted_countries: 'EU (ohne Zypern), Albanien, Andorra, Großbritannien, Schottland, Liechtenstein, Monaco, Norwegen, San Marino, Schweiz',
       
+      // Gebühren
       fee_professional_cleaning: 139.00,
       fee_toilet_disposal: 200.00,
       fee_late_return_per_hour: 29.00,
@@ -95,11 +104,13 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       fee_smoking_violation: 300.00,
       fee_refueling: 35.00,
       
+      // Kilometer
       included_km: 250,
       extra_km_rate: 0.35,
       unlimited_km_option: false,
       unlimited_km_fee: 240.00,
       
+      // Status
       status: 'draft',
       signed_by_landlord: false,
       signed_by_tenant: false
