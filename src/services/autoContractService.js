@@ -16,7 +16,7 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       return existingContract
     }
 
-    // 2. Hole Buchungsdaten (alle Daten sind direkt in der Rental-Tabelle!)
+    // 2. Hole Buchungsdaten
     const { data: rental, error: rentalError } = await supabase
       .from('OrcaCampers_rentals')
       .select('*')
@@ -28,7 +28,12 @@ export const autoCreateContractFromBooking = async (rentalId) => {
 
     console.log('📦 Buchungsdaten geladen:', rental.rental_number)
 
-    // 3. Berechne Tage
+    // 3. Formatiere Datum für date-Felder (YYYY-MM-DD)
+    const formatDate = (dateString) => {
+      if (!dateString) return null
+      return dateString.split(' ')[0].split('T')[0]
+    }
+
     const startDate = new Date(rental.start_date)
     const endDate = new Date(rental.end_date)
     const rentalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
@@ -38,41 +43,35 @@ export const autoCreateContractFromBooking = async (rentalId) => {
     const depositAmount = 1500.00
     const dailyRate = rentalDays > 0 ? totalAmount / rentalDays : 0
     
-    // Anzahlung (30%) und Restzahlung
     const downPayment = Math.round(totalAmount * 0.3 * 100) / 100
     const finalPayment = totalAmount - downPayment
 
-    // Fälligkeitsdaten
     const downPaymentDueDate = new Date(startDate)
     downPaymentDueDate.setDate(downPaymentDueDate.getDate() - 14)
     const finalPaymentDueDate = new Date(startDate)
     finalPaymentDueDate.setDate(finalPaymentDueDate.getDate() - 1)
 
-    // 5. Erstelle Vertrag mit allen Daten
+    // 5. Erstelle Vertrag
     const contractData = {
       rental_id: rentalId,
       contract_number: `WM-${Date.now()}`,
       
-      // Kundendaten
       customer_name: rental.customer_name || '',
       customer_email: rental.customer_email || '',
       customer_phone: rental.customer_phone || '',
       customer_address: rental.customer_address || '',
       
-      // Fahrzeugdaten
       vehicle_manufacturer: rental.vehicle_manufacturer || '',
       vehicle_model: rental.vehicle_model || '',
       vehicle_registration: rental.vehicle_license_plate || '',
       vehicle_vin: rental.vehicle_vin || '',
       
-      // Mietdaten
-      rental_start_date: rental.start_date,
-      rental_end_date: rental.end_date,
+      rental_start_date: formatDate(rental.start_date),
+      rental_end_date: formatDate(rental.end_date),
       rental_start_time: '14:00',
       rental_end_time: '10:00',
       rental_days: rentalDays,
       
-      // Preise
       daily_rate: dailyRate,
       total_amount: totalAmount,
       deposit_amount: depositAmount,
@@ -82,21 +81,17 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       final_payment: finalPayment,
       final_payment_due_date: finalPaymentDueDate.toISOString().split('T')[0],
       
-      // Bankdaten
       bank_account_holder: 'Andreas Grimm und Ben Neuendorf GbR',
       bank_iban: 'DE89370400440532013000',
       bank_bic: 'COBADEFFXXX',
       bank_name: 'Commerzbank',
       
-      // Versicherung
       insurance_package: 'Vollkasko',
       deductible_full_coverage: 1500.00,
       deductible_partial_coverage: 1500.00,
       
-      // Länder
       permitted_countries: 'EU (ohne Zypern), Albanien, Andorra, Großbritannien, Schottland, Liechtenstein, Monaco, Norwegen, San Marino, Schweiz',
       
-      // Gebühren
       fee_professional_cleaning: 139.00,
       fee_toilet_disposal: 200.00,
       fee_late_return_per_hour: 29.00,
@@ -104,17 +99,17 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       fee_smoking_violation: 300.00,
       fee_refueling: 35.00,
       
-      // Kilometer
       included_km: 250,
       extra_km_rate: 0.35,
       unlimited_km_option: false,
       unlimited_km_fee: 240.00,
       
-      // Status
       status: 'draft',
       signed_by_landlord: false,
       signed_by_tenant: false
     }
+
+    console.log('💾 Speichere Vertrag:', contractData)
 
     // 6. Speichere Vertrag
     const { data: newContract, error: contractError } = await supabase
@@ -123,7 +118,10 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       .select()
       .single()
 
-    if (contractError) throw contractError
+    if (contractError) {
+      console.error('❌ Supabase Error:', contractError)
+      throw contractError
+    }
 
     console.log('✅ Vertrag automatisch erstellt:', newContract.contract_number)
     return newContract
