@@ -103,10 +103,6 @@ export const autoCreateContractFromBooking = async (rentalId) => {
       extra_km_rate: 0.35,
       unlimited_km_option: false,
       unlimited_km_fee: 240.00,
-      
-      status: 'draft',
-      signed_by_landlord: false,
-      signed_by_tenant: false
     }
 
     console.log('💾 Speichere Vertrag:', contractData)
