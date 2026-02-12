@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.VITE_SUPABASE_ANON_KEY
+  'https://supabase.benneuendorf.com',
+  'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc0ODAxODEwMCwiZXhwIjo0OTAzNjkxNzAwLCJyb2xlIjoiYW5vbiJ9.7sYj8BXbWTc12HDynzELLxmkcmVVJ_-VRTW-sz02ads'
 )
 
 const BROWSERLESS_URL = 'http://91.99.70.245:3001'
