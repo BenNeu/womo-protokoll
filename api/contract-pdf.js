@@ -5,7 +5,7 @@ const supabase = createClient(
   process.env.VITE_SUPABASE_ANON_KEY
 )
 
-const BROWSERLESS_URL = 'http://10.0.1.7:3000'
+const BROWSERLESS_URL = 'http://91.99.70.245:3001'
 
 export default async function handler(req, res) {
   try {
