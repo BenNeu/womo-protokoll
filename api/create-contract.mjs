@@ -172,11 +172,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message })
   }
 }
-```
-
-Datei speichern (`Cmd+S`), dann pushen. In VS Code unten links siehst du den Git-Status — klick auf das Symbol mit dem Kreis und Pfeilen, dann "Commit" und "Push".
-
-Sobald Vercel deployed hat (1-2 Minuten), ist die API erreichbar unter:
-```
-POST https://womo-protokoll.vercel.app/api/create-contract
-Body: { "rental_id": "..." }
