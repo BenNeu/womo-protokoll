@@ -38,8 +38,18 @@ const getStatusLabel = (status) => {
 
 export const generateProtocolPDF = async (protocol, rental) => {
   try {
-    const pdf = new jsPDF('p', 'mm', 'a4')
-    let yPos = 20
+const pdf = new jsPDF('p', 'mm', 'a4')
+
+// DEBUG - danach wieder löschen
+console.log('Protocol Daten:', JSON.stringify({
+  id_card_photos: protocol.id_card_photos,
+  drivers_license_photos: protocol.drivers_license_photos,
+  photo_urls: protocol.photo_urls,
+  customer_signature: protocol.customer_signature,
+  staff_signature: protocol.staff_signature
+}, null, 2))
+
+let yPos = 20
 
     // ── HEADER ──────────────────────────────────────────
     const logoImg = new Image()
