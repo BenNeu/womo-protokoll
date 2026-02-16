@@ -63,8 +63,8 @@ export default function ProtocolPage() {
     damage_notes: '',
     additional_notes: '',
     photo_urls: [],
-    id_card_photo: null,
-    drivers_license_photo: null,
+    id_card_photos: [],
+    drivers_license_photos: [],
     customer_signature: null,
     staff_signature: null
   })
@@ -91,28 +91,21 @@ export default function ProtocolPage() {
   }
 
   const handlePhotoAdded = (url) => {
-    setFormData({
-      ...formData,
-      photo_urls: [...formData.photo_urls, url]
-    })
+    setFormData(prev => ({
+      ...prev,
+      photo_urls: [...prev.photo_urls, url]
+    }))
   }
 
   const handleCustomerSignature = (dataUrl) => {
-    setFormData({
-      ...formData,
-      customer_signature: dataUrl
-    })
+    setFormData(prev => ({ ...prev, customer_signature: dataUrl }))
   }
 
   const handleStaffSignature = (dataUrl) => {
-    setFormData({
-      ...formData,
-      staff_signature: dataUrl
-    })
+    setFormData(prev => ({ ...prev, staff_signature: dataUrl }))
   }
 
   const handleSubmit = async () => {
-    // Validierung
     if (!formData.mileage) {
       alert('Bitte Kilometerstand eingeben')
       return
@@ -123,7 +116,6 @@ export default function ProtocolPage() {
     }
 
     try {
-      // Speichern
       const { error } = await supabase
         .from('OrcaCampers_handover_protocols')
         .insert({
@@ -140,8 +132,8 @@ export default function ProtocolPage() {
           damage_notes: formData.damage_notes,
           additional_notes: formData.additional_notes,
           photo_urls: formData.photo_urls,
-          id_card_photo: formData.id_card_photo,
-          drivers_license_photo: formData.drivers_license_photo,
+          id_card_photo: formData.id_card_photos,
+          drivers_license_photo: formData.drivers_license_photos,
           customer_signature: formData.customer_signature,
           staff_signature: formData.staff_signature
         })
@@ -250,9 +242,7 @@ export default function ProtocolPage() {
       
       {Object.keys(formData.exterior_condition).map(key => (
         <div key={key} style={styles.checkItem}>
-          <label style={styles.checkLabel}>
-            {getLabel(key)}:
-          </label>
+          <label style={styles.checkLabel}>{getLabel(key)}:</label>
           <select
             value={formData.exterior_condition[key].status}
             onChange={(e) => setFormData({
@@ -278,9 +268,7 @@ export default function ProtocolPage() {
       
       {Object.keys(formData.interior_condition).map(key => (
         <div key={key} style={styles.checkItem}>
-          <label style={styles.checkLabel}>
-            {getLabel(key)}:
-          </label>
+          <label style={styles.checkLabel}>{getLabel(key)}:</label>
           <select
             value={formData.interior_condition[key].status}
             onChange={(e) => setFormData({
@@ -301,69 +289,92 @@ export default function ProtocolPage() {
         </div>
       ))}
 
-      {/* Ausweisdokumente des Mieters */}
+      {/* Ausweisdokumente */}
       <h2 style={styles.sectionTitle}>Ausweisdokumente des Mieters</h2>
 
+      {/* Personalausweis */}
       <div style={styles.section}>
-        <label style={styles.label}>Personalausweis (Vorder- und Rückseite):</label>
+        <label style={styles.label}>
+          Personalausweis (Vorder- und Rückseite): 
+          <span style={styles.photoCount}> {formData.id_card_photos.length} Foto(s)</span>
+        </label>
         <PhotoCapture 
-          protocolId={`${rentalId}-id-card`}
-          onPhotoAdded={(url) => setFormData(prev => ({...prev, id_card_photo: url}))}
-          label="📸 Personalausweis fotografieren"
+          onCapture={(url) => setFormData(prev => ({
+            ...prev,
+            id_card_photos: [...prev.id_card_photos, url]
+          }))}
         />
-        {formData.id_card_photo && (
-          <div style={styles.documentPhotoPreview}>
-            <img src={formData.id_card_photo} alt="Personalausweis" style={styles.documentPhoto} />
-            <button 
-              type="button"
-              onClick={() => setFormData(prev => ({...prev, id_card_photo: null}))}
-              style={styles.removePhotoButton}
-            >
-              ✕ Entfernen
-            </button>
+        {formData.id_card_photos.length > 0 && (
+          <div style={styles.photoGrid}>
+            {formData.id_card_photos.map((url, i) => (
+              <div key={i} style={styles.photoWrapper}>
+                <img src={url} alt={`Ausweis ${i+1}`} style={styles.photo} />
+                <button
+                  onClick={() => setFormData(prev => ({
+                    ...prev,
+                    id_card_photos: prev.id_card_photos.filter((_, idx) => idx !== i)
+                  }))}
+                  style={styles.removePhotoButton}
+                >✕</button>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
+      {/* Führerschein */}
       <div style={styles.section}>
-        <label style={styles.label}>Führerschein (Vorder- und Rückseite):</label>
+        <label style={styles.label}>
+          Führerschein (Vorder- und Rückseite):
+          <span style={styles.photoCount}> {formData.drivers_license_photos.length} Foto(s)</span>
+        </label>
         <PhotoCapture 
-          protocolId={`${rentalId}-drivers-license`}
-          onPhotoAdded={(url) => setFormData(prev => ({...prev, drivers_license_photo: url}))}
-          label="📸 Führerschein fotografieren"
+          onCapture={(url) => setFormData(prev => ({
+            ...prev,
+            drivers_license_photos: [...prev.drivers_license_photos, url]
+          }))}
         />
-        {formData.drivers_license_photo && (
-          <div style={styles.documentPhotoPreview}>
-            <img src={formData.drivers_license_photo} alt="Führerschein" style={styles.documentPhoto} />
-            <button 
-              type="button"
-              onClick={() => setFormData(prev => ({...prev, drivers_license_photo: null}))}
-              style={styles.removePhotoButton}
-            >
-              ✕ Entfernen
-            </button>
+        {formData.drivers_license_photos.length > 0 && (
+          <div style={styles.photoGrid}>
+            {formData.drivers_license_photos.map((url, i) => (
+              <div key={i} style={styles.photoWrapper}>
+                <img src={url} alt={`Führerschein ${i+1}`} style={styles.photo} />
+                <button
+                  onClick={() => setFormData(prev => ({
+                    ...prev,
+                    drivers_license_photos: prev.drivers_license_photos.filter((_, idx) => idx !== i)
+                  }))}
+                  style={styles.removePhotoButton}
+                >✕</button>
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Fotos */}
-      <h2 style={styles.sectionTitle}>Fahrzeugfotos</h2>
-      <PhotoCapture 
-        protocolId={rentalId}
-        onPhotoAdded={handlePhotoAdded}
-        label="Foto aufnehmen"
-      />
+      {/* Fahrzeugfotos */}
+      <h2 style={styles.sectionTitle}>
+        Fahrzeugfotos
+        <span style={styles.photoCount}> {formData.photo_urls.length} Foto(s)</span>
+      </h2>
+      <PhotoCapture onCapture={handlePhotoAdded} />
       
-      <div style={styles.photoGrid}>
-        {formData.photo_urls.map((url, i) => (
-          <img 
-            key={i} 
-            src={url} 
-            alt={`Foto ${i+1}`}
-            style={styles.photo}
-          />
-        ))}
-      </div>
+      {formData.photo_urls.length > 0 && (
+        <div style={styles.photoGrid}>
+          {formData.photo_urls.map((url, i) => (
+            <div key={i} style={styles.photoWrapper}>
+              <img src={url} alt={`Foto ${i+1}`} style={styles.photo} />
+              <button
+                onClick={() => setFormData(prev => ({
+                  ...prev,
+                  photo_urls: prev.photo_urls.filter((_, idx) => idx !== i)
+                }))}
+                style={styles.removePhotoButton}
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Schäden */}
       <div style={styles.section}>
@@ -396,15 +407,10 @@ export default function ProtocolPage() {
         label="Unterschrift Mieter"
         onSave={handleCustomerSignature}
       />
-
       {formData.customer_signature && (
         <div style={styles.signaturePreview}>
-          <p style={styles.previewLabel}>Gespeicherte Unterschrift Mieter:</p>
-          <img 
-            src={formData.customer_signature} 
-            alt="Unterschrift Mieter"
-            style={styles.signatureImage}
-          />
+          <p style={styles.previewLabel}>✅ Unterschrift Mieter gespeichert</p>
+          <img src={formData.customer_signature} alt="Unterschrift Mieter" style={styles.signatureImage} />
         </div>
       )}
 
@@ -412,15 +418,10 @@ export default function ProtocolPage() {
         label="Unterschrift Mitarbeiter/Vermieter"
         onSave={handleStaffSignature}
       />
-
       {formData.staff_signature && (
         <div style={styles.signaturePreview}>
-          <p style={styles.previewLabel}>Gespeicherte Unterschrift Mitarbeiter:</p>
-          <img 
-            src={formData.staff_signature} 
-            alt="Unterschrift Mitarbeiter"
-            style={styles.signatureImage}
-          />
+          <p style={styles.previewLabel}>✅ Unterschrift Mitarbeiter gespeichert</p>
+          <img src={formData.staff_signature} alt="Unterschrift Mitarbeiter" style={styles.signatureImage} />
         </div>
       )}
 
@@ -428,7 +429,6 @@ export default function ProtocolPage() {
       <button onClick={handleSubmit} style={styles.submitButton}>
         ✅ Protokoll speichern
       </button>
-
       <button onClick={() => navigate('/')} style={styles.cancelButton}>
         Abbrechen
       </button>
@@ -436,7 +436,6 @@ export default function ProtocolPage() {
   )
 }
 
-// Hilfsfunktion für Labels
 function getLabel(key) {
   const labels = {
     paint_body: 'Lack/Karosserie',
@@ -516,6 +515,11 @@ const styles = {
     color: '#374151',
     fontSize: '15px',
   },
+  photoCount: {
+    fontWeight: 'normal',
+    color: '#10b981',
+    fontSize: '14px',
+  },
   input: {
     width: '100%',
     padding: '12px',
@@ -568,46 +572,41 @@ const styles = {
     color: '#374151',
     flex: 1,
   },
-  documentPhotoPreview: {
-    marginTop: '15px',
-    padding: '15px',
-    backgroundColor: '#f0fdf4',
-    borderRadius: '8px',
-    border: '1px solid #86efac',
-    position: 'relative',
-  },
-  documentPhoto: {
-    maxWidth: '100%',
-    maxHeight: '300px',
-    borderRadius: '8px',
-    display: 'block',
-    margin: '0 auto',
-  },
-  removePhotoButton: {
-    marginTop: '10px',
-    padding: '8px 16px',
-    backgroundColor: '#ef4444',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '600',
-    width: '100%',
-  },
   photoGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
     gap: '10px',
     marginTop: '15px',
-    marginBottom: '20px',
+    marginBottom: '10px',
+  },
+  photoWrapper: {
+    position: 'relative',
   },
   photo: {
     width: '100%',
-    height: '150px',
+    height: '120px',
     objectFit: 'cover',
     borderRadius: '8px',
     border: '2px solid #e5e7eb',
+    display: 'block',
+  },
+  removePhotoButton: {
+    position: 'absolute',
+    top: '4px',
+    right: '4px',
+    width: '24px',
+    height: '24px',
+    backgroundColor: '#ef4444',
+    color: 'white',
+    border: 'none',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0',
   },
   signaturePreview: {
     marginTop: '15px',
@@ -640,6 +639,7 @@ const styles = {
     borderRadius: '8px',
     cursor: 'pointer',
     marginBottom: '10px',
+    marginTop: '20px',
   },
   cancelButton: {
     width: '100%',
