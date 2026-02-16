@@ -605,3 +605,166 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     throw error
   }
 }
+
+// Base64 Version für E-Mail Versand (kein Download)
+export const generateProtocolPDFBase64 = async (protocol, rental) => {
+  try {
+    const pdf = new jsPDF('p', 'mm', 'a4')
+
+    const idPhotos = parseArray(protocol.id_card_photos)
+    const licensePhotos = parseArray(protocol.drivers_license_photo)
+    const photoUrls = parseArray(protocol.photo_urls)
+
+    let yPos = 20
+
+    const logoImg = new Image()
+    logoImg.src = '/logo.png'
+    await new Promise((resolve) => { logoImg.onload = resolve; logoImg.onerror = resolve })
+    try { pdf.addImage(logoImg, 'PNG', 15, yPos, 30, 30) } catch (e) {}
+
+    const protocolType = protocol.protocol_type === 'handover' ? 'Übergabe' : 'Rücknahme'
+    pdf.setFontSize(20)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(`${protocolType}protokoll`, 105, yPos + 10, { align: 'center' })
+    pdf.setFontSize(11)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setTextColor(100)
+    const protocolDate = new Date(protocol.created_at)
+    pdf.text(`Erstellt am ${protocolDate.toLocaleDateString('de-DE')} um ${protocolDate.toLocaleTimeString('de-DE')}`, 105, yPos + 18, { align: 'center' })
+    pdf.setTextColor(0)
+    yPos += 40
+
+    pdf.setFillColor(240, 249, 245)
+    pdf.roundedRect(15, yPos, 180, 38, 3, 3, 'F')
+    pdf.setFontSize(11)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Mietvorgang', 20, yPos + 8)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Vertragsnummer: ${rental.rental_number}`, 20, yPos + 16)
+    pdf.text(`Kunde: ${rental.customer_name}`, 20, yPos + 23)
+    pdf.text(`Fahrzeug: ${rental.vehicle_manufacturer} ${rental.vehicle_model}`, 110, yPos + 16)
+    pdf.text(`Kennzeichen: ${rental.vehicle_license_plate || '-'}`, 110, yPos + 23)
+    pdf.text(`Durchgeführt von: ${protocol.completed_by}`, 20, yPos + 30)
+    yPos += 48
+
+    pdf.setFontSize(13)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('Fahrzeugdaten', 15, yPos)
+    yPos += 7
+    pdf.setDrawColor(16, 185, 129)
+    pdf.line(15, yPos, 195, yPos)
+    yPos += 6
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Kilometerstand: ${protocol.mileage} km`, 15, yPos)
+    pdf.text(`Tankstand: ${protocol.fuel_level}`, 80, yPos)
+    yPos += 6
+    pdf.text(`Frischwasser: ${protocol.fresh_water_tank}`, 15, yPos)
+    pdf.text(`Abwasser: ${protocol.waste_water_tank}`, 80, yPos)
+    yPos += 12
+
+    if (protocol.damage_notes) {
+      yPos = checkPageBreak(pdf, yPos, 20)
+      pdf.setFontSize(13)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text('Schäden / Anmerkungen', 15, yPos)
+      yPos += 7
+      pdf.setDrawColor(220, 38, 38)
+      pdf.line(15, yPos, 195, yPos)
+      yPos += 6
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      const lines = pdf.splitTextToSize(protocol.damage_notes, 180)
+      pdf.text(lines, 15, yPos)
+      yPos += lines.length * 5 + 8
+    }
+
+    if (photoUrls.length > 0) {
+      pdf.addPage(); yPos = 20
+      pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
+      pdf.text(`Fahrzeugfotos (${photoUrls.length})`, 15, yPos)
+      yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 10
+      let col = 0
+      for (const url of photoUrls) {
+        yPos = checkPageBreak(pdf, yPos, 75)
+        const xPos = col === 0 ? 15 : 105
+        const imgData = await loadImageAsBase64(url)
+        if (imgData) { try { pdf.addImage(imgData, 'JPEG', xPos, yPos, 85, 60) } catch (e) {} }
+        if (col === 1) yPos += 70
+        col = col === 0 ? 1 : 0
+      }
+      if (col === 1) yPos += 70
+    }
+
+    if (idPhotos.length > 0 || licensePhotos.length > 0) {
+      pdf.addPage(); yPos = 20
+      pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
+      pdf.text('Ausweisdokumente', 15, yPos)
+      yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 10
+
+      if (idPhotos.length > 0) {
+        pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
+        pdf.text('Personalausweis:', 15, yPos); yPos += 8
+        let col = 0
+        for (const url of idPhotos) {
+          const xPos = col === 0 ? 15 : 105
+          const imgData = await loadImageAsBase64(url)
+          if (imgData) { try { pdf.addImage(imgData, 'JPEG', xPos, yPos, 85, 55) } catch (e) {} }
+          if (col === 1) yPos += 65
+          col = col === 0 ? 1 : 0
+        }
+        if (col === 1) yPos += 65
+        yPos += 8
+      }
+
+      if (licensePhotos.length > 0) {
+        yPos = checkPageBreak(pdf, yPos, 70)
+        pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
+        pdf.text('Führerschein:', 15, yPos); yPos += 8
+        let col = 0
+        for (const url of licensePhotos) {
+          const xPos = col === 0 ? 15 : 105
+          const imgData = await loadImageAsBase64(url)
+          if (imgData) { try { pdf.addImage(imgData, 'JPEG', xPos, yPos, 85, 55) } catch (e) {} }
+          if (col === 1) yPos += 65
+          col = col === 0 ? 1 : 0
+        }
+      }
+    }
+
+    pdf.addPage(); yPos = 20
+    pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
+    pdf.text('Unterschriften', 15, yPos)
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 15
+
+    pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
+    pdf.text('Unterschrift Mieter:', 15, yPos); yPos += 8
+    if (protocol.customer_signature) {
+      const sigData = await loadImageAsBase64(protocol.customer_signature)
+      if (sigData) { try { pdf.addImage(sigData, 'PNG', 15, yPos, 85, 35) } catch (e) {} }
+    }
+    pdf.setDrawColor(100); pdf.line(15, yPos + 38, 100, yPos + 38)
+    pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
+    pdf.text(`${rental.customer_name}`, 15, yPos + 44)
+    pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')}`, 15, yPos + 50)
+
+    yPos -= 8
+    pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
+    pdf.text('Unterschrift Mitarbeiter:', 110, yPos); yPos += 8
+    if (protocol.staff_signature) {
+      const sigData = await loadImageAsBase64(protocol.staff_signature)
+      if (sigData) { try { pdf.addImage(sigData, 'PNG', 110, yPos, 85, 35) } catch (e) {} }
+    }
+    pdf.setDrawColor(100); pdf.line(110, yPos + 38, 195, yPos + 38)
+    pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
+    pdf.text(`${protocol.completed_by}`, 110, yPos + 44)
+    pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')}`, 110, yPos + 50)
+
+    // Base64 zurückgeben statt downloaden
+    return pdf.output('datauristring').split(',')[1]
+
+  } catch (error) {
+    console.error('Fehler beim PDF Base64 Export:', error)
+    throw error
+  }
+}
