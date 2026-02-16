@@ -3,23 +3,20 @@ import jsPDF from 'jspdf'
 
 // Hilfsfunktion: Bild von URL laden und als Base64 zurückgeben
 const loadImageAsBase64 = async (url) => {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = img.naturalWidth
-      canvas.height = img.naturalHeight
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0)
-      resolve(canvas.toDataURL('image/jpeg'))
-    }
-    img.onerror = () => {
-      console.log('Bild konnte nicht geladen werden:', url)
-      resolve(null)
-    }
-    img.src = url
-  })
+  try {
+    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`
+    const response = await fetch(proxyUrl)
+    const blob = await response.blob()
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  } catch (e) {
+    console.log('Bild konnte nicht geladen werden:', url)
+    return null
+  }
 }
 
 // Hilfsfunktion: neue Seite wenn nötig
