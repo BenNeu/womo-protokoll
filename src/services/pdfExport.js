@@ -3,19 +3,23 @@ import jsPDF from 'jspdf'
 
 // Hilfsfunktion: Bild von URL laden und als Base64 zurückgeben
 const loadImageAsBase64 = async (url) => {
-  try {
-    const response = await fetch(url)
-    const blob = await response.blob()
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
-    })
-  } catch (e) {
-    console.log('Bild konnte nicht geladen werden:', url)
-    return null
-  }
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+      resolve(canvas.toDataURL('image/jpeg'))
+    }
+    img.onerror = () => {
+      console.log('Bild konnte nicht geladen werden:', url)
+      resolve(null)
+    }
+    img.src = url
+  })
 }
 
 // Hilfsfunktion: neue Seite wenn nötig
@@ -39,15 +43,6 @@ const getStatusLabel = (status) => {
 export const generateProtocolPDF = async (protocol, rental) => {
   try {
 const pdf = new jsPDF('p', 'mm', 'a4')
-
-// DEBUG - danach wieder löschen
-console.log('Protocol Daten:', JSON.stringify({
-  id_card_photos: protocol.id_card_photos,
-  drivers_license_photos: protocol.drivers_license_photos,
-  photo_urls: protocol.photo_urls,
-  customer_signature: protocol.customer_signature,
-  staff_signature: protocol.staff_signature
-}, null, 2))
 
 let yPos = 20
 
