@@ -3,12 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../services/supabaseClient'
 import PhotoCapture from '../components/PhotoCapture'
 import SignaturePad from '../components/SignaturePad'
+import { generateProtocolPDFBase64 } from '../services/pdfExport'
 
 export default function ProtocolPage() {
   const { rentalId, type } = useParams()
   const navigate = useNavigate()
   const [rental, setRental] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   
   const [formData, setFormData] = useState({
     completed_by: '',
@@ -16,7 +18,6 @@ export default function ProtocolPage() {
     fuel_level: 'full',
     fresh_water_tank: 'full',
     waste_water_tank: 'empty',
-    
     exterior_condition: {
       paint_body: { status: 'good', notes: '' },
       windows_glass: { status: 'good', notes: '' },
@@ -27,7 +28,6 @@ export default function ProtocolPage() {
       awning: { status: 'good', notes: '' },
       trailer_hitch: { present: false, notes: '' }
     },
-    
     interior_condition: {
       upholstery_seats: { status: 'good', notes: '' },
       carpet_flooring: { status: 'good', notes: '' },
@@ -42,7 +42,6 @@ export default function ProtocolPage() {
       gas_system: { status: 'working', notes: '' },
       battery_power: { status: 'working', notes: '' }
     },
-    
     equipment_checklist: {
       spare_tire: { present: true, condition: 'good', notes: '' },
       jack: { present: true, condition: 'good', notes: '' },
@@ -59,7 +58,6 @@ export default function ProtocolPage() {
       document_folder: { present: true, notes: '' },
       keys_count: 2
     },
-    
     damage_notes: '',
     additional_notes: '',
     photo_urls: [],
@@ -80,7 +78,6 @@ export default function ProtocolPage() {
       .select('*')
       .eq('id', rentalId)
       .single()
-    
     if (error) {
       alert('Fehler: ' + error.message)
       navigate('/')
@@ -91,10 +88,7 @@ export default function ProtocolPage() {
   }
 
   const handlePhotoAdded = (url) => {
-    setFormData(prev => ({
-      ...prev,
-      photo_urls: [...prev.photo_urls, url]
-    }))
+    setFormData(prev => ({ ...prev, photo_urls: [...prev.photo_urls, url] }))
   }
 
   const handleCustomerSignature = (dataUrl) => {
@@ -106,17 +100,13 @@ export default function ProtocolPage() {
   }
 
   const handleSubmit = async () => {
-    if (!formData.mileage) {
-      alert('Bitte Kilometerstand eingeben')
-      return
-    }
-    if (!formData.completed_by) {
-      alert('Bitte Name des Mitarbeiters eingeben')
-      return
-    }
+    if (!formData.mileage) { alert('Bitte Kilometerstand eingeben'); return }
+    if (!formData.completed_by) { alert('Bitte Name des Mitarbeiters eingeben'); return }
 
+    setSaving(true)
     try {
-      const { error } = await supabase
+      // Protokoll speichern und gespeicherten Datensatz zurückbekommen
+      const { data: savedProtocol, error } = await supabase
         .from('OrcaCampers_handover_protocols')
         .insert({
           rental_id: rentalId,
@@ -137,18 +127,45 @@ export default function ProtocolPage() {
           customer_signature: formData.customer_signature,
           staff_signature: formData.staff_signature
         })
+        .select()
+        .single()
 
       if (error) {
-        console.error('Supabase Fehler:', error)
         alert('Fehler beim Speichern: ' + error.message)
+        setSaving(false)
         return
       }
 
-      alert('✅ Protokoll erfolgreich gespeichert!')
+      // PDF generieren und E-Mail senden
+      try {
+        const pdfBase64 = await generateProtocolPDFBase64(savedProtocol, rental)
+        const protocolType = type === 'handover' ? 'Übergabe' : 'Rücknahme'
+        const fileName = `${protocolType}_${rental.rental_number}.pdf`
+
+        await fetch('https://n8n.benneuendorf.com/webhook/protocol-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_email: rental.customer_email,
+            customer_name: rental.customer_name,
+            rental_number: rental.rental_number,
+            protocol_type: protocolType,
+            vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
+            pdf_base64: pdfBase64,
+            pdf_filename: fileName
+          })
+        })
+      } catch (emailErr) {
+        console.error('E-Mail konnte nicht gesendet werden:', emailErr)
+        // Protokoll ist gespeichert – E-Mail Fehler nicht blockieren
+      }
+
+      alert('✅ Protokoll gespeichert und E-Mail an Kunden gesendet!')
       navigate('/')
     } catch (err) {
-      console.error('Fehler:', err)
-      alert('Fehler beim Speichern: ' + err.message)
+      alert('Fehler: ' + err.message)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -159,9 +176,7 @@ export default function ProtocolPage() {
     <div style={styles.container}>
       <div style={styles.logoContainer}>
         <img src="/logo.png" alt="Firmenlogo" style={styles.logo} />
-        <h1 style={styles.title}>
-          {type === 'handover' ? 'Übergabe' : 'Rückgabe'}
-        </h1>
+        <h1 style={styles.title}>{type === 'handover' ? 'Übergabe' : 'Rückgabe'}</h1>
       </div>
       
       <div style={styles.infoCard}>
@@ -170,38 +185,21 @@ export default function ProtocolPage() {
         <strong>Fahrzeug:</strong> {rental.vehicle_manufacturer} {rental.vehicle_model} ({rental.vehicle_license_plate})
       </div>
 
-      {/* Mitarbeiter */}
       <div style={styles.section}>
         <label style={styles.label}>Durchgeführt von: *</label>
-        <input 
-          type="text"
-          placeholder="Dein Name"
-          value={formData.completed_by}
-          onChange={(e) => setFormData({...formData, completed_by: e.target.value})}
-          style={styles.input}
-        />
+        <input type="text" placeholder="Dein Name" value={formData.completed_by}
+          onChange={(e) => setFormData({...formData, completed_by: e.target.value})} style={styles.input} />
       </div>
 
-      {/* Kilometerstand */}
       <div style={styles.section}>
         <label style={styles.label}>Kilometerstand: *</label>
-        <input 
-          type="number"
-          placeholder="z.B. 45000"
-          value={formData.mileage}
-          onChange={(e) => setFormData({...formData, mileage: e.target.value})}
-          style={styles.input}
-        />
+        <input type="number" placeholder="z.B. 45000" value={formData.mileage}
+          onChange={(e) => setFormData({...formData, mileage: e.target.value})} style={styles.input} />
       </div>
 
-      {/* Tankfüllung */}
       <div style={styles.section}>
         <label style={styles.label}>Tankstand:</label>
-        <select
-          value={formData.fuel_level}
-          onChange={(e) => setFormData({...formData, fuel_level: e.target.value})}
-          style={styles.select}
-        >
+        <select value={formData.fuel_level} onChange={(e) => setFormData({...formData, fuel_level: e.target.value})} style={styles.select}>
           <option value="full">Voll</option>
           <option value="3/4">3/4</option>
           <option value="1/2">1/2</option>
@@ -210,14 +208,9 @@ export default function ProtocolPage() {
         </select>
       </div>
 
-      {/* Wassertanks */}
       <div style={styles.section}>
         <label style={styles.label}>Frischwasser-Tank:</label>
-        <select
-          value={formData.fresh_water_tank}
-          onChange={(e) => setFormData({...formData, fresh_water_tank: e.target.value})}
-          style={styles.select}
-        >
+        <select value={formData.fresh_water_tank} onChange={(e) => setFormData({...formData, fresh_water_tank: e.target.value})} style={styles.select}>
           <option value="full">Voll</option>
           <option value="partial">Teilweise</option>
           <option value="empty">Leer</option>
@@ -226,34 +219,20 @@ export default function ProtocolPage() {
 
       <div style={styles.section}>
         <label style={styles.label}>Abwasser-Tank:</label>
-        <select
-          value={formData.waste_water_tank}
-          onChange={(e) => setFormData({...formData, waste_water_tank: e.target.value})}
-          style={styles.select}
-        >
+        <select value={formData.waste_water_tank} onChange={(e) => setFormData({...formData, waste_water_tank: e.target.value})} style={styles.select}>
           <option value="empty">Leer</option>
           <option value="partial">Teilweise</option>
           <option value="full">Voll</option>
         </select>
       </div>
 
-      {/* Äußerer Zustand */}
       <h2 style={styles.sectionTitle}>Äußerer Zustand</h2>
-      
       {Object.keys(formData.exterior_condition).map(key => (
         <div key={key} style={styles.checkItem}>
           <label style={styles.checkLabel}>{getLabel(key)}:</label>
-          <select
-            value={formData.exterior_condition[key].status}
-            onChange={(e) => setFormData({
-              ...formData,
-              exterior_condition: {
-                ...formData.exterior_condition,
-                [key]: { ...formData.exterior_condition[key], status: e.target.value }
-              }
-            })}
-            style={styles.smallSelect}
-          >
+          <select value={formData.exterior_condition[key].status}
+            onChange={(e) => setFormData({...formData, exterior_condition: {...formData.exterior_condition, [key]: {...formData.exterior_condition[key], status: e.target.value}}})}
+            style={styles.smallSelect}>
             <option value="good">Gut</option>
             <option value="fair">Befriedigend</option>
             <option value="damaged">Mangelhaft</option>
@@ -263,23 +242,13 @@ export default function ProtocolPage() {
         </div>
       ))}
 
-      {/* Innenausstattung */}
       <h2 style={styles.sectionTitle}>Innenausstattung</h2>
-      
       {Object.keys(formData.interior_condition).map(key => (
         <div key={key} style={styles.checkItem}>
           <label style={styles.checkLabel}>{getLabel(key)}:</label>
-          <select
-            value={formData.interior_condition[key].status}
-            onChange={(e) => setFormData({
-              ...formData,
-              interior_condition: {
-                ...formData.interior_condition,
-                [key]: { ...formData.interior_condition[key], status: e.target.value }
-              }
-            })}
-            style={styles.smallSelect}
-          >
+          <select value={formData.interior_condition[key].status}
+            onChange={(e) => setFormData({...formData, interior_condition: {...formData.interior_condition, [key]: {...formData.interior_condition[key], status: e.target.value}}})}
+            style={styles.smallSelect}>
             <option value="good">Gut</option>
             <option value="fair">Befriedigend</option>
             <option value="damaged">Mangelhaft</option>
@@ -289,124 +258,73 @@ export default function ProtocolPage() {
         </div>
       ))}
 
-      {/* Ausweisdokumente */}
       <h2 style={styles.sectionTitle}>Ausweisdokumente des Mieters</h2>
 
-      {/* Personalausweis */}
       <div style={styles.section}>
-        <label style={styles.label}>
-          Personalausweis (Vorder- und Rückseite): 
+        <label style={styles.label}>Personalausweis (Vorder- und Rückseite):
           <span style={styles.photoCount}> {formData.id_card_photos.length} Foto(s)</span>
         </label>
-        <PhotoCapture 
-          onCapture={(url) => setFormData(prev => ({
-            ...prev,
-            id_card_photos: [...prev.id_card_photos, url]
-          }))}
-        />
+        <PhotoCapture onCapture={(url) => setFormData(prev => ({...prev, id_card_photos: [...prev.id_card_photos, url]}))} />
         {formData.id_card_photos.length > 0 && (
           <div style={styles.photoGrid}>
             {formData.id_card_photos.map((url, i) => (
               <div key={i} style={styles.photoWrapper}>
                 <img src={url} alt={`Ausweis ${i+1}`} style={styles.photo} />
-                <button
-                  onClick={() => setFormData(prev => ({
-                    ...prev,
-                    id_card_photos: prev.id_card_photos.filter((_, idx) => idx !== i)
-                  }))}
-                  style={styles.removePhotoButton}
-                >✕</button>
+                <button onClick={() => setFormData(prev => ({...prev, id_card_photos: prev.id_card_photos.filter((_, idx) => idx !== i)}))} style={styles.removePhotoButton}>✕</button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Führerschein */}
       <div style={styles.section}>
-        <label style={styles.label}>
-          Führerschein (Vorder- und Rückseite):
+        <label style={styles.label}>Führerschein (Vorder- und Rückseite):
           <span style={styles.photoCount}> {formData.drivers_license_photos.length} Foto(s)</span>
         </label>
-        <PhotoCapture 
-          onCapture={(url) => setFormData(prev => ({
-            ...prev,
-            drivers_license_photos: [...prev.drivers_license_photos, url]
-          }))}
-        />
+        <PhotoCapture onCapture={(url) => setFormData(prev => ({...prev, drivers_license_photos: [...prev.drivers_license_photos, url]}))} />
         {formData.drivers_license_photos.length > 0 && (
           <div style={styles.photoGrid}>
             {formData.drivers_license_photos.map((url, i) => (
               <div key={i} style={styles.photoWrapper}>
                 <img src={url} alt={`Führerschein ${i+1}`} style={styles.photo} />
-                <button
-                  onClick={() => setFormData(prev => ({
-                    ...prev,
-                    drivers_license_photos: prev.drivers_license_photos.filter((_, idx) => idx !== i)
-                  }))}
-                  style={styles.removePhotoButton}
-                >✕</button>
+                <button onClick={() => setFormData(prev => ({...prev, drivers_license_photos: prev.drivers_license_photos.filter((_, idx) => idx !== i)}))} style={styles.removePhotoButton}>✕</button>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Fahrzeugfotos */}
       <h2 style={styles.sectionTitle}>
         Fahrzeugfotos
         <span style={styles.photoCount}> {formData.photo_urls.length} Foto(s)</span>
       </h2>
       <PhotoCapture onCapture={handlePhotoAdded} />
-      
       {formData.photo_urls.length > 0 && (
         <div style={styles.photoGrid}>
           {formData.photo_urls.map((url, i) => (
             <div key={i} style={styles.photoWrapper}>
               <img src={url} alt={`Foto ${i+1}`} style={styles.photo} />
-              <button
-                onClick={() => setFormData(prev => ({
-                  ...prev,
-                  photo_urls: prev.photo_urls.filter((_, idx) => idx !== i)
-                }))}
-                style={styles.removePhotoButton}
-              >✕</button>
+              <button onClick={() => setFormData(prev => ({...prev, photo_urls: prev.photo_urls.filter((_, idx) => idx !== i)}))} style={styles.removePhotoButton}>✕</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Schäden */}
       <div style={styles.section}>
         <label style={styles.label}>Schäden/Anmerkungen:</label>
-        <textarea
-          value={formData.damage_notes}
-          onChange={(e) => setFormData({...formData, damage_notes: e.target.value})}
-          rows="4"
-          placeholder="Beschreibe eventuelle Schäden..."
-          style={styles.textarea}
-        />
+        <textarea value={formData.damage_notes} onChange={(e) => setFormData({...formData, damage_notes: e.target.value})}
+          rows="4" placeholder="Beschreibe eventuelle Schäden..." style={styles.textarea} />
       </div>
 
-      {/* Zusätzliche Notizen */}
       <div style={styles.section}>
         <label style={styles.label}>Zusätzliche Notizen:</label>
-        <textarea
-          value={formData.additional_notes}
-          onChange={(e) => setFormData({...formData, additional_notes: e.target.value})}
-          rows="3"
-          placeholder="Weitere Anmerkungen..."
-          style={styles.textarea}
-        />
+        <textarea value={formData.additional_notes} onChange={(e) => setFormData({...formData, additional_notes: e.target.value})}
+          rows="3" placeholder="Weitere Anmerkungen..." style={styles.textarea} />
       </div>
 
-      {/* Unterschriften */}
       <h2 style={styles.sectionTitle}>Unterschriften</h2>
 
-      <SignaturePad 
-        label="Unterschrift Mieter"
-        onSave={handleCustomerSignature}
-      />
+      <SignaturePad label="Unterschrift Mieter" onSave={handleCustomerSignature} />
       {formData.customer_signature && (
         <div style={styles.signaturePreview}>
           <p style={styles.previewLabel}>✅ Unterschrift Mieter gespeichert</p>
@@ -414,10 +332,7 @@ export default function ProtocolPage() {
         </div>
       )}
 
-      <SignaturePad 
-        label="Unterschrift Mitarbeiter/Vermieter"
-        onSave={handleStaffSignature}
-      />
+      <SignaturePad label="Unterschrift Mitarbeiter/Vermieter" onSave={handleStaffSignature} />
       {formData.staff_signature && (
         <div style={styles.signaturePreview}>
           <p style={styles.previewLabel}>✅ Unterschrift Mitarbeiter gespeichert</p>
@@ -425,237 +340,51 @@ export default function ProtocolPage() {
         </div>
       )}
 
-      {/* Buttons */}
-      <button onClick={handleSubmit} style={styles.submitButton}>
-        ✅ Protokoll speichern
+      <button onClick={handleSubmit} disabled={saving} style={{...styles.submitButton, opacity: saving ? 0.7 : 1}}>
+        {saving ? '⏳ Wird gespeichert und gesendet...' : '✅ Protokoll speichern'}
       </button>
-      <button onClick={() => navigate('/')} style={styles.cancelButton}>
-        Abbrechen
-      </button>
+      <button onClick={() => navigate('/')} style={styles.cancelButton}>Abbrechen</button>
     </div>
   )
 }
 
 function getLabel(key) {
   const labels = {
-    paint_body: 'Lack/Karosserie',
-    windows_glass: 'Fenster/Scheiben',
-    tires: 'Reifen',
-    lighting: 'Beleuchtung',
-    roof_skylight: 'Dach/Dachluke',
-    doors_locks: 'Türen/Schlösser',
-    awning: 'Markise',
-    trailer_hitch: 'Anhängerkupplung',
-    upholstery_seats: 'Polster/Sitze',
-    carpet_flooring: 'Teppich/Bodenbelag',
-    walls_panels: 'Wände/Verkleidung',
-    windows_blinds: 'Fenster/Rollos',
-    kitchen_stove: 'Küche/Kocher',
-    refrigerator: 'Kühlschrank',
-    heating: 'Heizung',
-    toilet_shower: 'Toilette/Dusche',
-    sink_faucet: 'Waschbecken/Wasserhahn',
-    interior_lighting: 'Beleuchtung (innen)',
-    gas_system: 'Gasanlage',
-    battery_power: 'Batterie/Stromversorgung'
+    paint_body: 'Lack/Karosserie', windows_glass: 'Fenster/Scheiben', tires: 'Reifen',
+    lighting: 'Beleuchtung', roof_skylight: 'Dach/Dachluke', doors_locks: 'Türen/Schlösser',
+    awning: 'Markise', trailer_hitch: 'Anhängerkupplung', upholstery_seats: 'Polster/Sitze',
+    carpet_flooring: 'Teppich/Bodenbelag', walls_panels: 'Wände/Verkleidung',
+    windows_blinds: 'Fenster/Rollos', kitchen_stove: 'Küche/Kocher', refrigerator: 'Kühlschrank',
+    heating: 'Heizung', toilet_shower: 'Toilette/Dusche', sink_faucet: 'Waschbecken/Wasserhahn',
+    interior_lighting: 'Beleuchtung (innen)', gas_system: 'Gasanlage', battery_power: 'Batterie/Stromversorgung'
   }
   return labels[key] || key
 }
 
 const styles = {
-  container: {
-    maxWidth: '800px',
-    margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#f9fafb',
-    minHeight: '100vh',
-  },
-  logoContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '15px',
-    marginBottom: '20px',
-  },
-  logo: {
-    maxWidth: '180px',
-    height: 'auto',
-  },
-  title: {
-    fontSize: '28px',
-    fontWeight: 'bold',
-    color: '#1f2937',
-    margin: '0',
-    textAlign: 'center',
-  },
-  infoCard: {
-    backgroundColor: '#dbeafe',
-    padding: '15px',
-    borderRadius: '8px',
-    marginBottom: '25px',
-    fontSize: '14px',
-    lineHeight: '1.6',
-  },
-  section: {
-    marginBottom: '20px',
-  },
-  sectionTitle: {
-    fontSize: '20px',
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: '30px',
-    marginBottom: '15px',
-    borderBottom: '2px solid #e5e7eb',
-    paddingBottom: '8px',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '8px',
-    fontWeight: '600',
-    color: '#374151',
-    fontSize: '15px',
-  },
-  photoCount: {
-    fontWeight: 'normal',
-    color: '#10b981',
-    fontSize: '14px',
-  },
-  input: {
-    width: '100%',
-    padding: '12px',
-    fontSize: '16px',
-    border: '2px solid #e5e7eb',
-    borderRadius: '8px',
-    backgroundColor: 'white',
-    boxSizing: 'border-box',
-  },
-  select: {
-    width: '100%',
-    padding: '12px',
-    fontSize: '16px',
-    border: '2px solid #e5e7eb',
-    borderRadius: '8px',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-  },
-  smallSelect: {
-    padding: '8px',
-    fontSize: '14px',
-    border: '1px solid #e5e7eb',
-    borderRadius: '6px',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-  },
-  textarea: {
-    width: '100%',
-    padding: '12px',
-    fontSize: '16px',
-    border: '2px solid #e5e7eb',
-    borderRadius: '8px',
-    backgroundColor: 'white',
-    fontFamily: 'inherit',
-    resize: 'vertical',
-    boxSizing: 'border-box',
-  },
-  checkItem: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '10px',
-    marginBottom: '8px',
-    backgroundColor: 'white',
-    borderRadius: '6px',
-    border: '1px solid #e5e7eb',
-  },
-  checkLabel: {
-    fontSize: '14px',
-    color: '#374151',
-    flex: 1,
-  },
-  photoGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '10px',
-    marginTop: '15px',
-    marginBottom: '10px',
-  },
-  photoWrapper: {
-    position: 'relative',
-  },
-  photo: {
-    width: '100%',
-    height: '120px',
-    objectFit: 'cover',
-    borderRadius: '8px',
-    border: '2px solid #e5e7eb',
-    display: 'block',
-  },
-  removePhotoButton: {
-    position: 'absolute',
-    top: '4px',
-    right: '4px',
-    width: '24px',
-    height: '24px',
-    backgroundColor: '#ef4444',
-    color: 'white',
-    border: 'none',
-    borderRadius: '50%',
-    cursor: 'pointer',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0',
-  },
-  signaturePreview: {
-    marginTop: '15px',
-    marginBottom: '25px',
-    padding: '15px',
-    backgroundColor: '#f0fdf4',
-    borderRadius: '8px',
-    border: '1px solid #86efac',
-  },
-  previewLabel: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#166534',
-    marginBottom: '10px',
-  },
-  signatureImage: {
-    maxWidth: '100%',
-    border: '1px solid #d1d5db',
-    borderRadius: '4px',
-    backgroundColor: 'white',
-  },
-  submitButton: {
-    width: '100%',
-    padding: '16px',
-    fontSize: '18px',
-    fontWeight: '600',
-    backgroundColor: '#10b981',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    marginBottom: '10px',
-    marginTop: '20px',
-  },
-  cancelButton: {
-    width: '100%',
-    padding: '16px',
-    fontSize: '16px',
-    fontWeight: '500',
-    backgroundColor: '#6b7280',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-  },
-  loading: {
-    textAlign: 'center',
-    padding: '50px',
-    fontSize: '18px',
-    color: '#6b7280',
-  }
+  container: { maxWidth: '800px', margin: '0 auto', padding: '20px', backgroundColor: '#f9fafb', minHeight: '100vh' },
+  logoContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', marginBottom: '20px' },
+  logo: { maxWidth: '180px', height: 'auto' },
+  title: { fontSize: '28px', fontWeight: 'bold', color: '#1f2937', margin: '0', textAlign: 'center' },
+  infoCard: { backgroundColor: '#dbeafe', padding: '15px', borderRadius: '8px', marginBottom: '25px', fontSize: '14px', lineHeight: '1.6' },
+  section: { marginBottom: '20px' },
+  sectionTitle: { fontSize: '20px', fontWeight: '600', color: '#374151', marginTop: '30px', marginBottom: '15px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px' },
+  label: { display: 'block', marginBottom: '8px', fontWeight: '600', color: '#374151', fontSize: '15px' },
+  photoCount: { fontWeight: 'normal', color: '#10b981', fontSize: '14px' },
+  input: { width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #e5e7eb', borderRadius: '8px', backgroundColor: 'white', boxSizing: 'border-box' },
+  select: { width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #e5e7eb', borderRadius: '8px', backgroundColor: 'white', cursor: 'pointer' },
+  smallSelect: { padding: '8px', fontSize: '14px', border: '1px solid #e5e7eb', borderRadius: '6px', backgroundColor: 'white', cursor: 'pointer' },
+  textarea: { width: '100%', padding: '12px', fontSize: '16px', border: '2px solid #e5e7eb', borderRadius: '8px', backgroundColor: 'white', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' },
+  checkItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', marginBottom: '8px', backgroundColor: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' },
+  checkLabel: { fontSize: '14px', color: '#374151', flex: 1 },
+  photoGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '15px', marginBottom: '10px' },
+  photoWrapper: { position: 'relative' },
+  photo: { width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e5e7eb', display: 'block' },
+  removePhotoButton: { position: 'absolute', top: '4px', right: '4px', width: '24px', height: '24px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0' },
+  signaturePreview: { marginTop: '15px', marginBottom: '25px', padding: '15px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #86efac' },
+  previewLabel: { fontSize: '14px', fontWeight: '600', color: '#166534', marginBottom: '10px' },
+  signatureImage: { maxWidth: '100%', border: '1px solid #d1d5db', borderRadius: '4px', backgroundColor: 'white' },
+  submitButton: { width: '100%', padding: '16px', fontSize: '18px', fontWeight: '600', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', marginBottom: '10px', marginTop: '20px' },
+  cancelButton: { width: '100%', padding: '16px', fontSize: '16px', fontWeight: '500', backgroundColor: '#6b7280', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' },
+  loading: { textAlign: 'center', padding: '50px', fontSize: '18px', color: '#6b7280' }
 }
