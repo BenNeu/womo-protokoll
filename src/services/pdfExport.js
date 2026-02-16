@@ -58,10 +58,10 @@ export const generateProtocolPDF = async (protocol, rental) => {
 
     // Arrays sicherstellen + Debug
     console.log('RAW id_card_photos:', protocol.id_card_photos, typeof protocol.id_card_photos)
-    console.log('RAW drivers_license_photos:', protocol.drivers_license_photos, typeof protocol.drivers_license_photos)
+    console.log('RAW drivers_license_photo:', protocol.drivers_license_photo, typeof protocol.drivers_license_photo)
 
     const idPhotos = parseArray(protocol.id_card_photos)
-    const licensePhotos = parseArray(protocol.drivers_license_photos)
+    const licensePhotos = parseArray(protocol.drivers_license_photo)
     const photoUrls = parseArray(protocol.photo_urls)
 
     console.log('idPhotos:', idPhotos.length, idPhotos)
