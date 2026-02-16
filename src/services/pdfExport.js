@@ -24,7 +24,14 @@ const loadImageAsBase64 = async (url) => {
 const parseArray = (value) => {
   if (!value) return []
   if (Array.isArray(value)) return value
-  try { return JSON.parse(value) } catch (e) { return [] }
+  try {
+    const parsed = JSON.parse(value)
+    // Falls nochmal ein String zurückkommt, nochmal parsen
+    if (typeof parsed === 'string') return JSON.parse(parsed)
+    return parsed
+  } catch (e) {
+    return []
+  }
 }
 
 // Hilfsfunktion: neue Seite wenn nötig
