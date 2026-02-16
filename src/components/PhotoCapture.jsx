@@ -1,75 +1,51 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState } from 'react'
 
 export default function PhotoCapture({ onCapture }) {
-  const videoRef = useRef(null)
-  const [stream, setStream] = useState(null)
-  const [isCameraActive, setIsCameraActive] = useState(false)
-  const [pendingStream, setPendingStream] = useState(null)
+  const inputRef = useRef(null)
+  const [preview, setPreview] = useState(null)
 
-  // Stream zuweisen sobald Video-Element im DOM ist
-  useEffect(() => {
-    if (isCameraActive && videoRef.current && pendingStream) {
-      videoRef.current.srcObject = pendingStream
-      setPendingStream(null)
+  const handleCapture = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const imageData = event.target.result
+      setPreview(imageData)
+      onCapture(imageData)
     }
-  }, [isCameraActive, pendingStream])
-
-  const startCamera = async () => {
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      })
-      setStream(mediaStream)
-      setPendingStream(mediaStream)
-      setIsCameraActive(true)
-    } catch (err) {
-      alert('Kamera-Zugriff fehlgeschlagen: ' + err.message)
-    }
-  }
-
-  const capturePhoto = () => {
-    const video = videoRef.current
-    const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    const ctx = canvas.getContext('2d')
-    ctx.drawImage(video, 0, 0)
-    const imageData = canvas.toDataURL('image/jpeg', 0.8)
-    onCapture(imageData)
-    stopCamera()
-  }
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop())
-      setStream(null)
-      setIsCameraActive(false)
-    }
+    reader.readAsDataURL(file)
   }
 
   return (
     <div style={styles.container}>
-      {!isCameraActive ? (
-        <button onClick={startCamera} style={styles.button}>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleCapture}
+        style={{ display: 'none' }}
+      />
+
+      {preview ? (
+        <div>
+          <img src={preview} alt="Aufgenommenes Foto" style={styles.preview} />
+          <button 
+            onClick={() => {
+              setPreview(null)
+              inputRef.current.value = ''
+              inputRef.current.click()
+            }} 
+            style={styles.retakeButton}
+          >
+            🔄 Neu aufnehmen
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => inputRef.current.click()} style={styles.button}>
           📷 Foto aufnehmen
         </button>
-      ) : (
-        <div style={styles.cameraContainer}>
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
-            style={styles.video}
-          />
-          <div style={styles.controls}>
-            <button onClick={capturePhoto} style={styles.captureButton}>
-              📸 Aufnehmen
-            </button>
-            <button onClick={stopCamera} style={styles.cancelButton}>
-              ❌ Abbrechen
-            </button>
-          </div>
-        </div>
       )}
     </div>
   )
@@ -89,40 +65,21 @@ const styles = {
     cursor: 'pointer',
     fontWeight: '600',
   },
-  cameraContainer: {
+  preview: {
     width: '100%',
-  },
-  video: {
-    width: '100%',
-    maxHeight: '400px',
+    maxHeight: '300px',
+    objectFit: 'cover',
     borderRadius: '8px',
-    backgroundColor: '#000',
+    marginBottom: '10px',
   },
-  controls: {
-    display: 'flex',
-    gap: '10px',
-    marginTop: '10px',
-  },
-  captureButton: {
-    flex: 1,
-    padding: '12px',
-    fontSize: '16px',
-    backgroundColor: '#10b981',
+  retakeButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    backgroundColor: '#6b7280',
     color: 'white',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
-    fontWeight: '600',
-  },
-  cancelButton: {
-    flex: 1,
-    padding: '12px',
-    fontSize: '16px',
-    backgroundColor: '#ef4444',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: '600',
+    fontWeight: '500',
   },
 }
