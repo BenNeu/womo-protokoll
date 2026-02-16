@@ -287,8 +287,6 @@ export const generateProtocolPDF = async (protocol, rental) => {
 
     // ── AUSWEISDOKUMENTE ─────────────────────────────────
     if (idPhotos.length > 0 || licensePhotos.length > 0) {
-    // ── AUSWEISDOKUMENTE ─────────────────────────────────
-    if (idPhotos.length > 0 || licensePhotos.length > 0) {
       pdf.addPage()
       yPos = 20
       pdf.setFontSize(13)
