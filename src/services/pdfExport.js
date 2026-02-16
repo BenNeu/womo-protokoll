@@ -5,8 +5,11 @@ import jsPDF from 'jspdf'
 const loadImageAsBase64 = async (url) => {
   try {
     const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`
+    console.log('Lade Bild via Proxy:', proxyUrl)
     const response = await fetch(proxyUrl)
+    console.log('Response Status:', response.status, response.ok)
     const blob = await response.blob()
+    console.log('Blob Typ:', blob.type, 'Größe:', blob.size)
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = () => resolve(reader.result)
@@ -14,7 +17,7 @@ const loadImageAsBase64 = async (url) => {
       reader.readAsDataURL(blob)
     })
   } catch (e) {
-    console.log('Bild konnte nicht geladen werden:', url)
+    console.log('Fehler:', e.message, 'URL:', url)
     return null
   }
 }
