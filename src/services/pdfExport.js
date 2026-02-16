@@ -280,6 +280,13 @@ export const generateProtocolPDF = async (protocol, rental) => {
       if (col === 1) yPos += photoH + 10
     }
 
+    // DEBUG
+    console.log('idPhotos length:', idPhotos.length)
+    console.log('licensePhotos length:', licensePhotos.length)
+    console.log('Bedingung:', idPhotos.length > 0 || licensePhotos.length > 0)
+
+    // ── AUSWEISDOKUMENTE ─────────────────────────────────
+    if (idPhotos.length > 0 || licensePhotos.length > 0) {
     // ── AUSWEISDOKUMENTE ─────────────────────────────────
     if (idPhotos.length > 0 || licensePhotos.length > 0) {
       pdf.addPage()
