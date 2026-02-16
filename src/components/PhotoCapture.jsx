@@ -1,17 +1,26 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 
 export default function PhotoCapture({ onCapture }) {
   const videoRef = useRef(null)
   const [stream, setStream] = useState(null)
   const [isCameraActive, setIsCameraActive] = useState(false)
+  const [pendingStream, setPendingStream] = useState(null)
+
+  // Stream zuweisen sobald Video-Element im DOM ist
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && pendingStream) {
+      videoRef.current.srcObject = pendingStream
+      setPendingStream(null)
+    }
+  }, [isCameraActive, pendingStream])
 
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: 'environment' } 
       })
-      videoRef.current.srcObject = mediaStream
       setStream(mediaStream)
+      setPendingStream(mediaStream)
       setIsCameraActive(true)
     } catch (err) {
       alert('Kamera-Zugriff fehlgeschlagen: ' + err.message)
@@ -25,7 +34,6 @@ export default function PhotoCapture({ onCapture }) {
     canvas.height = video.videoHeight
     const ctx = canvas.getContext('2d')
     ctx.drawImage(video, 0, 0)
-    
     const imageData = canvas.toDataURL('image/jpeg', 0.8)
     onCapture(imageData)
     stopCamera()
