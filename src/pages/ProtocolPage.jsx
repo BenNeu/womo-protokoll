@@ -132,7 +132,7 @@ export default function ProtocolPage() {
           damage_notes: formData.damage_notes,
           additional_notes: formData.additional_notes,
           photo_urls: formData.photo_urls,
-          id_card_photo: formData.id_card_photos,
+          id_card_photos: formData.id_card_photos,
           drivers_license_photo: formData.drivers_license_photos,
           customer_signature: formData.customer_signature,
           staff_signature: formData.staff_signature
