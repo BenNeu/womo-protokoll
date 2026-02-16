@@ -20,15 +20,15 @@ const loadImageAsBase64 = async (url) => {
   }
 }
 
-// Hilfsfunktion: Supabase Array-Felder parsen (kommen manchmal als String)
+// Hilfsfunktion: Supabase Array-Felder parsen
 const parseArray = (value) => {
   if (!value) return []
   if (Array.isArray(value)) return value
   try {
     const parsed = JSON.parse(value)
-    // Falls nochmal ein String zurückkommt, nochmal parsen
     if (typeof parsed === 'string') return JSON.parse(parsed)
-    return parsed
+    if (Array.isArray(parsed)) return parsed
+    return []
   } catch (e) {
     return []
   }
@@ -56,10 +56,16 @@ export const generateProtocolPDF = async (protocol, rental) => {
   try {
     const pdf = new jsPDF('p', 'mm', 'a4')
 
-    // Arrays sicherstellen
+    // Arrays sicherstellen + Debug
+    console.log('RAW id_card_photos:', protocol.id_card_photos, typeof protocol.id_card_photos)
+    console.log('RAW drivers_license_photos:', protocol.drivers_license_photos, typeof protocol.drivers_license_photos)
+
     const idPhotos = parseArray(protocol.id_card_photos)
     const licensePhotos = parseArray(protocol.drivers_license_photos)
     const photoUrls = parseArray(protocol.photo_urls)
+
+    console.log('idPhotos:', idPhotos.length, idPhotos)
+    console.log('licensePhotos:', licensePhotos.length, licensePhotos)
 
     let yPos = 20
 
@@ -287,13 +293,10 @@ export const generateProtocolPDF = async (protocol, rental) => {
       if (col === 1) yPos += photoH + 10
     }
 
-    // DEBUG
-    console.log('idPhotos length:', idPhotos.length)
-    console.log('licensePhotos length:', licensePhotos.length)
-    console.log('Bedingung:', idPhotos.length > 0 || licensePhotos.length > 0)
-
     // ── AUSWEISDOKUMENTE ─────────────────────────────────
+    console.log('Vor Ausweisdokumente Block - idPhotos:', idPhotos.length, 'licensePhotos:', licensePhotos.length)
     if (idPhotos.length > 0 || licensePhotos.length > 0) {
+      console.log('Erstelle Ausweisdokumente Seite')
       pdf.addPage()
       yPos = 20
       pdf.setFontSize(13)
@@ -324,6 +327,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
       }
 
       if (licensePhotos.length > 0) {
+        console.log('Lade Führerscheinfotos:', licensePhotos.length)
         yPos = checkPageBreak(pdf, yPos, 70)
         pdf.setFontSize(11)
         pdf.setFont('helvetica', 'bold')
@@ -355,7 +359,6 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.line(15, yPos, 195, yPos)
     yPos += 15
 
-    // Mieter
     pdf.setFontSize(11)
     pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mieter:', 15, yPos)
@@ -373,7 +376,6 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.text(`${rental.customer_name}`, 15, yPos + 44)
     pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')}`, 15, yPos + 50)
 
-    // Mitarbeiter
     yPos -= 8
     pdf.setFontSize(11)
     pdf.setFont('helvetica', 'bold')
@@ -392,7 +394,6 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.text(`${protocol.completed_by}`, 110, yPos + 44)
     pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')}`, 110, yPos + 50)
 
-    // ── SPEICHERN ────────────────────────────────────────
     const fileName = `${protocolType}_${rental.rental_number}_${protocolDate.toISOString().split('T')[0]}.pdf`
     pdf.save(fileName)
 
