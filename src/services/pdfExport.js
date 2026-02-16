@@ -4,8 +4,8 @@ import jsPDF from 'jspdf'
 // Hilfsfunktion: Bild von URL laden und als Base64 zurückgeben
 const loadImageAsBase64 = async (url) => {
   try {
-    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`
-    console.log('Lade Bild via Proxy:', proxyUrl)
+   const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(String(url))}`
+   console.log('Vollständige Proxy URL:', proxyUrl)
     const response = await fetch(proxyUrl)
     console.log('Response Status:', response.status, response.ok)
     const blob = await response.blob()
