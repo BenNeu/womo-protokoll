@@ -183,8 +183,8 @@ export default async function handler(req, res) {
 <div class="section">
 <h2>§ 8 Haftung</h2>
 <p><span class="clause-num">24.</span> Der Vermieter haftet nicht für Gegenstände, die der Mieter im Fahrzeug zurücklässt.</p>
-<p><span class="clause-num">25.</span> Der Mieter haftet für alle von ihm zu vertretenden Schäden am Fahrzeug. Die Haftung ist auf die Höhe der Selbstbeteiligung begrenzt, es sei denn, der Schaden wurde vorsätzlich oder grob fahrlässig verursacht.</p>
-<p><span class="clause-num">26.</span> Der Mieter haftet unbeschränkt für alle Verstöße gegen gesetzliche Bestimmungen während der Mietzeit.</p>
+<p><span class="clause-num">25.</span> Der Mieter haftet für alle von ihm zu vertretenden Schäden am Fahrzeug und für den Verlust des Fahrzeugs. Die Haftung ist auf die Höhe der Selbstbeteiligung der Kaskoversicherung begrenzt, es sei denn, der Schaden wurde vorsätzlich oder grob fahrlässig verursacht.</p>
+<p><span class="clause-num">26.</span> Der Mieter haftet unbeschränkt für alle von ihm während der Mietzeit begangenen Verstöße gegen gesetzliche Bestimmungen, insbesondere Verkehrs- und Ordnungswidrigkeiten.</p>
 </div>
 
 <div class="section">
