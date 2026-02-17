@@ -154,7 +154,7 @@ export default async function handler(req, res) {
 <p><span class="clause-num">14.</span> Der Mieter haftet für Schäden bis zur Höhe der Selbstbeteiligung, sofern er den Schaden zu vertreten hat. Für Schäden, die durch Vorsatz oder grobe Fahrlässigkeit des Mieters entstehen, haftet der Mieter in voller Höhe.</p>
 </div>
 
-<div class="section page-break">
+<div class="section">
 <h2>§ 5 Nutzung des Fahrzeugs</h2>
 <p><span class="clause-num">15.</span> Das Fahrzeug darf nur vom Mieter und den im Mietvertrag angegebenen weiteren Fahrern geführt werden.</p>
 <p><span class="clause-num">16.</span> Das Mindestalter für alle Fahrer beträgt 25 Jahre. Alle Fahrer müssen seit mindestens 3 Jahren im Besitz einer gültigen Fahrerlaubnis der Klasse B sein.</p>
@@ -205,7 +205,7 @@ export default async function handler(req, res) {
 <p><span class="clause-num">28.</span> Bei verspäteter Rückgabe ist der Vermieter berechtigt, für jede angefangene Stunde <strong>${fmtPrice(data.fee_late_return_per_hour || 29)} €</strong> zu berechnen.</p>
 </div>
 
-<div class="section page-break">
+<div class="section">
 <h2>§ 11 Rückgabezustand, verspätete Rückgabe und sonstige Gebühren</h2>
 
 <p><span class="clause-num">29.</span> <strong>Rückgabezustand und Reinigung:</strong><br>
