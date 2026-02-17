@@ -158,7 +158,7 @@ export default async function handler(req, res) {
 <h2>§ 5 Nutzung des Fahrzeugs</h2>
 <p><span class="clause-num">15.</span> Das Fahrzeug darf nur vom Mieter und den im Mietvertrag angegebenen weiteren Fahrern geführt werden.</p>
 <p><span class="clause-num">16.</span> Das Mindestalter für alle Fahrer beträgt 25 Jahre. Alle Fahrer müssen seit mindestens 3 Jahren im Besitz einer gültigen Fahrerlaubnis der Klasse B sein.</p>
-<p><span class="clause-num">17.</span> Fahrten sind in folgende Länder gestattet: ${fmt(data.permitted_countries)}. Außerhalb dieser Grenzen besteht kein Versicherungsschutz ohne schriftliche Zustimmung des Vermieters.</p>
+<p><span class="clause-num">17.</span> Fahrten sind in folgende Länder gestattet: ${fmt(data.permitted_countries)}. Außerhalb dieser Grenzen besteht in der Kraftfahrversicherung (insbesondere Vollkaskoschutz) kein Versicherungsschutz. Will der Mieter das Fahrzeug in anderen Ländern und Gebieten benutzen, so ist hierzu eine schriftliche vorherige Zustimmung des Vermieters erforderlich.</p>
 <p><span class="clause-num">18.</span> Dem Mieter ist es untersagt, das Fahrzeug zu verwenden:</p>
 <ul>
   <li>zur Teilnahme an motorsportlichen Veranstaltungen und Fahrzeugtests,</li>
