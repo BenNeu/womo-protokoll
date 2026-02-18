@@ -131,14 +131,15 @@ export default async function handler(req, res) {
 <p>26. Der Mieter haftet unbeschränkt für alle von ihm während der Mietzeit begangenen Verstöße gegen gesetzliche Bestimmungen, insbesondere Verkehrs- und Ordnungswidrigkeiten.</p>
 
 <h2>§ 9 Stornierung</h2>
-<p>Bei Rücktritt des Mieters vom Vertrag vor dem vereinbarten Mietbeginn sind folgende Stornogebühren zu zahlen:</p>
-<table>
-  <tr><th>Zeitraum vor Mietbeginn</th><th>Stornogebühr</th></tr>
-  <tr><td>bis zu 30 Tage</td><td>30 % des Mietpreises</td></tr>
-  <tr><td>29. bis 8. Tag</td><td>35 % des Mietpreises</td></tr>
-  <tr><td>ab dem 7. Tag</td><td>40 % des Mietpreises</td></tr>
-  <tr><td>Am Anmiettag / Nichtabnahme</td><td>95 % des Mietpreises</td></tr>
-</table>
+<p>Bei Rücktritt des Mieters vom Vertrag vor dem vereinbarten Mietbeginn sind die folgenden Stornogebühren zu zahlen:</p>
+<ul>
+  <li>bis 45 Tage vor Mietbeginn: 30 %</li>
+  <li>44–15 Tage vor Mietbeginn: 60 %</li>
+  <li>14–8 Tage vor Mietbeginn: 75 %</li>
+  <li>7–1 Tag vor Mietbeginn: 90 %</li>
+  <li>am Tag der Anmietung oder bei Nichtabnahme: 95 %</li>
+</ul>
+<p>Dem Mieter bleibt ausdrücklich der Nachweis vorbehalten, dass dem Vermieter kein oder ein wesentlich geringerer Schaden entstanden ist.</p>
 
 <h2>§ 10 Übergabe und Rückgabe</h2>
 <p>27. Bei Übergabe und Rückgabe des Fahrzeugs wird von den Parteien gemeinsam ein Protokoll erstellt und unterzeichnet, in dem der Zustand des Fahrzeugs, der Kilometerstand, der Tankfüllstand und eventuelle Mängel oder Schäden festgehalten werden.</p>
