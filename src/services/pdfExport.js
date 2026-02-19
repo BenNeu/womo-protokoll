@@ -31,6 +31,26 @@ const loadImageAsBase64 = async (url) => {
   }
 }
 
+// Hilfsfunktion: Unterschrift mit weißem Hintergrund (Fix für schwarze PNGs)
+const prepareSignature = (dataUrl) => {
+  return new Promise((resolve) => {
+    if (!dataUrl) { resolve(null); return }
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0)
+      resolve(canvas.toDataURL('image/jpeg', 0.9))
+    }
+    img.onerror = () => resolve(null)
+    img.src = dataUrl
+  })
+}
+
 // Hilfsfunktion: Supabase Array-Felder parsen
 const parseArray = (value) => {
   if (!value) return []
@@ -105,8 +125,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.setFontSize(11); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100)
     const protocolDate = new Date(protocol.created_at)
     pdf.text(`Erstellt am ${protocolDate.toLocaleDateString('de-DE')} um ${protocolDate.toLocaleTimeString('de-DE')}`, 105, yPos + 18, { align: 'center' })
-    pdf.setTextColor(0)
-    yPos += 40
+    pdf.setTextColor(0); yPos += 40
 
     // STAMMDATEN
     pdf.setFillColor(240, 249, 245)
@@ -303,7 +322,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
       }
     }
 
-    // UNTERSCHRIFTEN – FIX: direkt als data URL verwenden, kein Proxy
+    // UNTERSCHRIFTEN
     pdf.addPage(); yPos = 20
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschriften', 15, yPos)
@@ -312,7 +331,8 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mieter:', 15, yPos); yPos += 8
     if (protocol.customer_signature) {
-      try { pdf.addImage(protocol.customer_signature, 'PNG', 15, yPos, 85, 35) } catch (e) {}
+      const sigData = await prepareSignature(protocol.customer_signature)
+      if (sigData) { try { pdf.addImage(sigData, 'JPEG', 15, yPos, 85, 35) } catch (e) {} }
     }
     pdf.setDrawColor(100); pdf.line(15, yPos + 38, 100, yPos + 38)
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
@@ -323,7 +343,8 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mitarbeiter:', 110, yPos); yPos += 8
     if (protocol.staff_signature) {
-      try { pdf.addImage(protocol.staff_signature, 'PNG', 110, yPos, 85, 35) } catch (e) {}
+      const sigData = await prepareSignature(protocol.staff_signature)
+      if (sigData) { try { pdf.addImage(sigData, 'JPEG', 110, yPos, 85, 35) } catch (e) {} }
     }
     pdf.setDrawColor(100); pdf.line(110, yPos + 38, 195, yPos + 38)
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
@@ -394,7 +415,6 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       { label: 'Dach / Solarpanels', value: protocol.roof_check },
       { label: 'Unterboden', value: protocol.underbody_check },
     ])
-
     renderSection('2. Innenraum - Reinigung', [
       { label: 'Komplett saugen', value: protocol.vacuum_interior },
       { label: 'Boden wischen', value: protocol.mop_floor },
@@ -406,7 +426,6 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       { label: 'Fenster innen', value: protocol.windows_inside },
       { label: 'Geruchskontrolle', value: protocol.odor_check },
     ])
-
     renderSection('3. Wasser, Gas & Strom', [
       { label: 'Frischwassertank befüllen', value: protocol.freshwater_fill },
       { label: 'Abwassertank leeren', value: protocol.wastewater_empty },
@@ -415,7 +434,6 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       { label: 'Stromanschluss prüfen', value: protocol.power_check },
       { label: 'Batterie prüfen', value: protocol.battery_check },
     ])
-
     renderSection('4. Ausstattung & Inventar', [
       { label: 'Geschirr & Besteck vollständig', value: protocol.dishes_complete },
       { label: 'Töpfe & Pfannen vollständig', value: protocol.cookware_complete },
@@ -426,7 +444,6 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       { label: 'Warnweste & Verbandskasten', value: protocol.safety_equipment },
       { label: 'Bedienungsanleitungen vorhanden', value: protocol.manuals_present },
     ])
-
     renderSection('5. Abschlusskontrolle', [
       { label: 'Schlüssel vollständig', value: protocol.keys_complete },
       { label: 'Dokumentenmappe vollständig', value: protocol.documents_complete },
@@ -462,13 +479,14 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       if (col === 1) yPos += 70
     }
 
-    // UNTERSCHRIFT – FIX: direkt verwenden
+    // UNTERSCHRIFT
     yPos = checkPageBreak(pdf, yPos, 70)
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mitarbeiter', 15, yPos); yPos += 7
     pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 15
     if (protocol.employee_signature) {
-      try { pdf.addImage(protocol.employee_signature, 'PNG', 15, yPos, 80, 30) } catch (e) {}
+      const sigData = await prepareSignature(protocol.employee_signature)
+      if (sigData) { try { pdf.addImage(sigData, 'JPEG', 15, yPos, 80, 30) } catch (e) {} }
       yPos += 35
     }
     pdf.setDrawColor(100); pdf.line(15, yPos, 100, yPos); yPos += 5
@@ -709,7 +727,7 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
       }
     }
 
-    // UNTERSCHRIFTEN – FIX: direkt als data URL verwenden, kein Proxy
+    // UNTERSCHRIFTEN
     pdf.addPage(); yPos = 20
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschriften', 15, yPos)
@@ -718,7 +736,8 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mieter:', 15, yPos); yPos += 8
     if (protocol.customer_signature) {
-      try { pdf.addImage(protocol.customer_signature, 'PNG', 15, yPos, 85, 35) } catch (e) {}
+      const sigData = await prepareSignature(protocol.customer_signature)
+      if (sigData) { try { pdf.addImage(sigData, 'JPEG', 15, yPos, 85, 35) } catch (e) {} }
     }
     pdf.setDrawColor(100); pdf.line(15, yPos + 38, 100, yPos + 38)
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
@@ -729,7 +748,8 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mitarbeiter:', 110, yPos); yPos += 8
     if (protocol.staff_signature) {
-      try { pdf.addImage(protocol.staff_signature, 'PNG', 110, yPos, 85, 35) } catch (e) {}
+      const sigData = await prepareSignature(protocol.staff_signature)
+      if (sigData) { try { pdf.addImage(sigData, 'JPEG', 110, yPos, 85, 35) } catch (e) {} }
     }
     pdf.setDrawColor(100); pdf.line(110, yPos + 38, 195, yPos + 38)
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
