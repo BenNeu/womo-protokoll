@@ -142,6 +142,9 @@ export default function ProtocolPage() {
         const protocolType = type === 'handover' ? 'Übergabe' : 'Rücknahme'
         const fileName = `${protocolType}_${rental.rental_number}.pdf`
 
+        console.log('🚀 Webhook wird aufgerufen!')
+        alert('Webhook Test - du solltest das sehen!')
+
         await fetch('https://n8n.benneuendorf.com/webhook/protocol-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
