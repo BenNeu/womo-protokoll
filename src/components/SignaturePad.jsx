@@ -49,21 +49,16 @@ export default function SignaturePad({ onSave, label = "Unterschrift", bucket = 
     setUploading(true)
 
     try {
-      // Canvas → Blob
+      // data URL für PDF (direkt in DB)
+      const dataUrl = canvas.toDataURL('image/png')
+
+      // Zusätzlich in Storage hochladen als Backup
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
       const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.png`
+      await supabase.storage.from(bucket).upload(fileName, blob, { contentType: 'image/png', upsert: false })
 
-      const { error } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, blob, { contentType: 'image/png', upsert: false })
-
-      if (error) throw error
-
-      const { data: urlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(fileName)
-
-      onSave(urlData.publicUrl)
+      // data URL zurückgeben (nicht die Storage URL!)
+      onSave(dataUrl)
       alert('✅ Unterschrift gespeichert')
     } catch (err) {
       alert('Upload fehlgeschlagen: ' + err.message)
@@ -89,15 +84,11 @@ export default function SignaturePad({ onSave, label = "Unterschrift", bucket = 
         onTouchEnd={stopDrawing}
       />
       <div style={styles.buttons}>
-        <button onClick={clear} style={styles.clearButton}>🗑️ Löschen</button>
+        <button onClick={clear} style={styles.clearButton}>Löschen</button>
         <button
           onClick={save}
           disabled={!hasSignature || uploading}
-          style={{
-            ...styles.saveButton,
-            opacity: (hasSignature && !uploading) ? 1 : 0.5,
-            cursor: (hasSignature && !uploading) ? 'pointer' : 'not-allowed'
-          }}
+          style={{ ...styles.saveButton, opacity: (hasSignature && !uploading) ? 1 : 0.5, cursor: (hasSignature && !uploading) ? 'pointer' : 'not-allowed' }}
         >
           {uploading ? '⏳ Wird hochgeladen...' : '✅ Unterschrift bestätigen'}
         </button>
@@ -108,22 +99,18 @@ export default function SignaturePad({ onSave, label = "Unterschrift", bucket = 
 
 const styles = {
   container: { marginBottom: '25px' },
-  label: {
-    display: 'block', marginBottom: '10px',
-    fontWeight: '600', color: '#374151', fontSize: '16px',
-  },
+  label: { display: 'block', marginBottom: '10px', fontWeight: '600', color: '#374151', fontSize: '16px' },
   canvas: {
-    border: '2px solid #e5e7eb', borderRadius: '8px',
-    backgroundColor: 'white', cursor: 'crosshair',
-    touchAction: 'none', width: '100%', maxWidth: '600px', display: 'block',
+    border: '2px solid #e5e7eb', borderRadius: '8px', backgroundColor: 'white',
+    cursor: 'crosshair', touchAction: 'none', width: '100%', maxWidth: '600px', display: 'block'
   },
   buttons: { display: 'flex', gap: '10px', marginTop: '10px' },
   clearButton: {
     padding: '10px 20px', fontSize: '14px', backgroundColor: '#ef4444',
-    color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500',
+    color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '500'
   },
   saveButton: {
     padding: '10px 20px', fontSize: '14px', backgroundColor: '#10b981',
-    color: 'white', border: 'none', borderRadius: '6px', fontWeight: '500',
+    color: 'white', border: 'none', borderRadius: '6px', fontWeight: '500'
   }
 }

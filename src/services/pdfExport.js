@@ -32,14 +32,9 @@ const loadImageAsBase64 = async (url) => {
 }
 
 // Hilfsfunktion: Unterschrift mit weißem Hintergrund (Fix für schwarze PNGs)
-const prepareSignature = async (dataUrl) => {
-  if (!dataUrl) return null
-  
-  if (dataUrl.startsWith('http')) {
-    return await loadImageAsBase64(dataUrl)
-  }
-  
+const prepareSignature = (dataUrl) => {
   return new Promise((resolve) => {
+    if (!dataUrl) { resolve(null); return }
     const img = new Image()
     img.onload = () => {
       const canvas = document.createElement('canvas')
