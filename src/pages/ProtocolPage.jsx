@@ -5,13 +5,68 @@ import PhotoCapture from '../components/PhotoCapture'
 import SignaturePad from '../components/SignaturePad'
 import { generateProtocolPDFBase64 } from '../services/pdfExport'
 
+const sendProtocolEmail = async (savedProtocol, rental, type) => {
+  const MAX_RETRIES = 3
+  const RETRY_DELAY = 2000
+
+  const pdfBase64 = await generateProtocolPDFBase64(savedProtocol, rental)
+  const protocolType = type === 'handover' ? 'Übergabe' : 'Rücknahme'
+  const fileName = `${protocolType}_${rental.rental_number}.pdf`
+
+  const payload = {
+    customer_email: rental.customer_email,
+    customer_name: rental.customer_name,
+    rental_number: rental.rental_number,
+    protocol_type: protocolType,
+    vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
+    pdf_base64: pdfBase64,
+    pdf_filename: fileName
+  }
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`Email-Versuch ${attempt}/${MAX_RETRIES}...`)
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 30000)
+
+      const response = await fetch('https://n8n.benneuendorf.com/webhook/protocol-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      })
+
+      clearTimeout(timeout)
+
+      if (response.ok) {
+        console.log(`✅ Email erfolgreich gesendet (Versuch ${attempt})`)
+        return
+      } else {
+        console.warn(`⚠️ Server antwortete mit Status ${response.status} (Versuch ${attempt})`)
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.warn(`⏱️ Timeout bei Versuch ${attempt}`)
+      } else {
+        console.warn(`❌ Fehler bei Versuch ${attempt}:`, err.message)
+      }
+    }
+
+    if (attempt < MAX_RETRIES) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
+    }
+  }
+
+  console.error('❌ Email nach 3 Versuchen fehlgeschlagen')
+}
+
 export default function ProtocolPage() {
   const { rentalId, type } = useParams()
   const navigate = useNavigate()
   const [rental, setRental] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  
+
   const [formData, setFormData] = useState({
     completed_by: '',
     mileage: '',
@@ -105,7 +160,6 @@ export default function ProtocolPage() {
 
     setSaving(true)
     try {
-      // Protokoll speichern und gespeicherten Datensatz zurückbekommen
       const { data: savedProtocol, error } = await supabase
         .from('OrcaCampers_handover_protocols')
         .insert({
@@ -136,35 +190,17 @@ export default function ProtocolPage() {
         return
       }
 
-      // PDF generieren und E-Mail senden
-      try {
-        const pdfBase64 = await generateProtocolPDFBase64(savedProtocol, rental)
-        const protocolType = type === 'handover' ? 'Übergabe' : 'Rücknahme'
-        const fileName = `${protocolType}_${rental.rental_number}.pdf`
-
-        await fetch('https://n8n.benneuendorf.com/webhook/protocol-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customer_email: rental.customer_email,
-            customer_name: rental.customer_name,
-            rental_number: rental.rental_number,
-            protocol_type: protocolType,
-            vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
-            pdf_base64: pdfBase64,
-            pdf_filename: fileName
-          })
-        })
-      } catch (emailErr) {
-        console.error('E-Mail konnte nicht gesendet werden:', emailErr)
-        // Protokoll ist gespeichert – E-Mail Fehler nicht blockieren
-      }
-
-      alert('✅ Protokoll gespeichert und E-Mail an Kunden gesendet!')
+      // Sofort weiterleiten – Email läuft im Hintergrund
+      alert('✅ Protokoll gespeichert! E-Mail wird im Hintergrund gesendet...')
       navigate('/')
+
+      // Email im Hintergrund mit Retry
+      sendProtocolEmail(savedProtocol, rental, type).catch(err => {
+        console.error('Hintergrund-Email fehlgeschlagen:', err)
+      })
+
     } catch (err) {
       alert('Fehler: ' + err.message)
-    } finally {
       setSaving(false)
     }
   }
@@ -178,7 +214,7 @@ export default function ProtocolPage() {
         <img src="/logo.png" alt="Firmenlogo" style={styles.logo} />
         <h1 style={styles.title}>{type === 'handover' ? 'Übergabe' : 'Rückgabe'}</h1>
       </div>
-      
+
       <div style={styles.infoCard}>
         <strong>Mietvorgang:</strong> {rental.rental_number}<br/>
         <strong>Kunde:</strong> {rental.customer_name}<br/>
@@ -341,7 +377,7 @@ export default function ProtocolPage() {
       )}
 
       <button onClick={handleSubmit} disabled={saving} style={{...styles.submitButton, opacity: saving ? 0.7 : 1}}>
-        {saving ? '⏳ Wird gespeichert und gesendet...' : '✅ Protokoll speichern'}
+        {saving ? '⏳ Wird gespeichert...' : '✅ Protokoll speichern'}
       </button>
       <button onClick={() => navigate('/')} style={styles.cancelButton}>Abbrechen</button>
     </div>
