@@ -34,6 +34,20 @@ const parseArray = (value) => {
   }
 }
 
+// NEU: Hilfsfunktion für JSON-Objekte (exterior_condition, interior_condition, etc.)
+const parseJsonField = (value) => {
+  if (!value) return null
+  if (typeof value === 'object' && !Array.isArray(value)) return value
+  try {
+    const parsed = JSON.parse(value)
+    if (typeof parsed === 'object' && !Array.isArray(parsed)) return parsed
+    return null
+  } catch (e) {
+    console.log('JSON-Feld konnte nicht geparst werden:', e.message)
+    return null
+  }
+}
+
 // Hilfsfunktion: neue Seite wenn nötig
 const checkPageBreak = (pdf, yPos, needed = 30) => {
   if (yPos + needed > 270) {
@@ -56,16 +70,29 @@ export const generateProtocolPDF = async (protocol, rental) => {
   try {
     const pdf = new jsPDF('p', 'mm', 'a4')
 
-    // Arrays sicherstellen + Debug
+    // Arrays und Objekte sicherstellen + Debug
     console.log('RAW id_card_photos:', protocol.id_card_photos, typeof protocol.id_card_photos)
     console.log('RAW drivers_license_photo:', protocol.drivers_license_photo, typeof protocol.drivers_license_photo)
+    console.log('RAW exterior_condition:', protocol.exterior_condition, typeof protocol.exterior_condition)
+    console.log('RAW interior_condition:', protocol.interior_condition, typeof protocol.interior_condition)
+    console.log('RAW equipment_checklist:', protocol.equipment_checklist, typeof protocol.equipment_checklist)
+    console.log('RAW photo_urls:', protocol.photo_urls, typeof protocol.photo_urls)
 
     const idPhotos = parseArray(protocol.id_card_photos)
     const licensePhotos = parseArray(protocol.drivers_license_photo)
     const photoUrls = parseArray(protocol.photo_urls)
 
-    console.log('idPhotos:', idPhotos.length, idPhotos)
-    console.log('licensePhotos:', licensePhotos.length, licensePhotos)
+    // FIX: JSON-Felder korrekt parsen
+    const exterior = parseJsonField(protocol.exterior_condition)
+    const interior = parseJsonField(protocol.interior_condition)
+    const equipment = parseJsonField(protocol.equipment_checklist)
+
+    console.log('Geparst - idPhotos:', idPhotos.length)
+    console.log('Geparst - licensePhotos:', licensePhotos.length)
+    console.log('Geparst - photoUrls:', photoUrls.length)
+    console.log('Geparst - exterior:', exterior)
+    console.log('Geparst - interior:', interior)
+    console.log('Geparst - equipment:', equipment)
 
     let yPos = 20
 
@@ -137,8 +164,8 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.line(15, yPos, 195, yPos)
     yPos += 6
 
-    if (protocol.exterior_condition) {
-      const exterior = protocol.exterior_condition
+    // FIX: Jetzt wird "exterior" (die geparste Variable) verwendet
+    if (exterior) {
       const exteriorLabels = {
         paint_body: 'Lack/Karosserie', windows_glass: 'Fenster/Scheiben',
         tires: 'Reifen', lighting: 'Beleuchtung', roof_skylight: 'Dach/Dachluke',
@@ -156,6 +183,13 @@ export const generateProtocolPDF = async (protocol, rental) => {
         col = col === 0 ? 1 : 0
       })
       if (col === 1) yPos += 6
+    } else {
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(150)
+      pdf.text('Keine Daten vorhanden', 15, yPos)
+      pdf.setTextColor(0)
+      yPos += 6
     }
     yPos += 8
 
@@ -169,8 +203,8 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.line(15, yPos, 195, yPos)
     yPos += 6
 
-    if (protocol.interior_condition) {
-      const interior = protocol.interior_condition
+    // FIX: Jetzt wird "interior" (die geparste Variable) verwendet
+    if (interior) {
       const interiorLabels = {
         upholstery_seats: 'Polster/Sitze', carpet_flooring: 'Teppich/Boden',
         walls_panels: 'Wände/Verkleidung', windows_blinds: 'Fenster/Rollos',
@@ -191,6 +225,13 @@ export const generateProtocolPDF = async (protocol, rental) => {
         col = col === 0 ? 1 : 0
       })
       if (col === 1) yPos += 6
+    } else {
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(150)
+      pdf.text('Keine Daten vorhanden', 15, yPos)
+      pdf.setTextColor(0)
+      yPos += 6
     }
     yPos += 8
 
@@ -204,8 +245,8 @@ export const generateProtocolPDF = async (protocol, rental) => {
     pdf.line(15, yPos, 195, yPos)
     yPos += 6
 
-    if (protocol.equipment_checklist) {
-      const eq = protocol.equipment_checklist
+    // FIX: Jetzt wird "equipment" (die geparste Variable) verwendet
+    if (equipment) {
       const eqLabels = {
         spare_tire: 'Ersatzrad', jack: 'Wagenheber', tool_kit: 'Werkzeugset',
         first_aid_kit: 'Verbandskasten', warning_triangle: 'Warndreieck',
@@ -220,14 +261,21 @@ export const generateProtocolPDF = async (protocol, rental) => {
       Object.keys(eqLabels).forEach((key) => {
         yPos = checkPageBreak(pdf, yPos, 8)
         const xPos = col === 0 ? 15 : 105
-        const present = eq[key]?.present !== undefined ? (eq[key].present ? '[X]' : '[ ]') : '[X]'
+        const present = equipment[key]?.present !== undefined ? (equipment[key].present ? '[X]' : '[ ]') : '[X]'
         pdf.text(`${present} ${eqLabels[key]}`, xPos, yPos)
         if (col === 1) yPos += 6
         col = col === 0 ? 1 : 0
       })
       if (col === 1) yPos += 6
       yPos += 4
-      pdf.text(`Schlüssel: ${eq.keys_count || '-'} Stück`, 15, yPos)
+      pdf.text(`Schlüssel: ${equipment.keys_count || '-'} Stück`, 15, yPos)
+    } else {
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(150)
+      pdf.text('Keine Daten vorhanden', 15, yPos)
+      pdf.setTextColor(0)
+      yPos += 6
     }
     yPos += 12
 
@@ -278,14 +326,24 @@ export const generateProtocolPDF = async (protocol, rental) => {
       for (const url of photoUrls) {
         yPos = checkPageBreak(pdf, yPos, photoH + 15)
         const xPos = col === 0 ? 15 : 105
+        console.log('Lade Fahrzeugfoto:', url)
         const imgData = await loadImageAsBase64(url)
         if (imgData) {
           try {
             pdf.addImage(imgData, 'JPEG', xPos, yPos, photoW, photoH)
           } catch (e) {
+            console.warn('Foto konnte nicht ins PDF eingefügt werden:', url, e.message)
             pdf.setFontSize(8)
-            pdf.text('[Foto konnte nicht geladen werden]', xPos, yPos + 30)
+            pdf.setTextColor(150)
+            pdf.text('[Foto konnte nicht geladen werden]', xPos + 5, yPos + 30)
+            pdf.setTextColor(0)
           }
+        } else {
+          console.warn('Foto-Download fehlgeschlagen:', url)
+          pdf.setFontSize(8)
+          pdf.setTextColor(150)
+          pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30)
+          pdf.setTextColor(0)
         }
         if (col === 1) yPos += photoH + 10
         col = col === 0 ? 1 : 0
@@ -315,6 +373,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
         let col = 0
         for (const url of idPhotos) {
           const xPos = col === 0 ? 15 : 105
+          console.log('Lade Ausweisfoto:', url)
           const imgData = await loadImageAsBase64(url)
           if (imgData) {
             try { pdf.addImage(imgData, 'JPEG', xPos, yPos, 85, 55) } catch (e) {}
@@ -336,6 +395,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
         let col = 0
         for (const url of licensePhotos) {
           const xPos = col === 0 ? 15 : 105
+          console.log('Lade Führerscheinfoto:', url)
           const imgData = await loadImageAsBase64(url)
           if (imgData) {
             try { pdf.addImage(imgData, 'JPEG', xPos, yPos, 85, 55) } catch (e) {}
@@ -411,6 +471,11 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     const licensePhotos = parseArray(protocol.drivers_license_photo)
     const photoUrls = parseArray(protocol.photo_urls)
 
+    // FIX: JSON-Felder korrekt parsen
+    const exterior = parseJsonField(protocol.exterior_condition)
+    const interior = parseJsonField(protocol.interior_condition)
+    const equipment = parseJsonField(protocol.equipment_checklist)
+
     let yPos = 20
 
     // ── HEADER ──────────────────────────────────────────
@@ -472,8 +537,8 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     pdf.line(15, yPos, 195, yPos)
     yPos += 6
 
-    if (protocol.exterior_condition) {
-      const exterior = protocol.exterior_condition
+    // FIX: Jetzt wird "exterior" (die geparste Variable) verwendet
+    if (exterior) {
       const exteriorLabels = {
         paint_body: 'Lack/Karosserie', windows_glass: 'Fenster/Scheiben',
         tires: 'Reifen', lighting: 'Beleuchtung', roof_skylight: 'Dach/Dachluke',
@@ -491,6 +556,13 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
         col = col === 0 ? 1 : 0
       })
       if (col === 1) yPos += 6
+    } else {
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(150)
+      pdf.text('Keine Daten vorhanden', 15, yPos)
+      pdf.setTextColor(0)
+      yPos += 6
     }
     yPos += 8
 
@@ -504,8 +576,8 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     pdf.line(15, yPos, 195, yPos)
     yPos += 6
 
-    if (protocol.interior_condition) {
-      const interior = protocol.interior_condition
+    // FIX: Jetzt wird "interior" (die geparste Variable) verwendet
+    if (interior) {
       const interiorLabels = {
         upholstery_seats: 'Polster/Sitze', carpet_flooring: 'Teppich/Boden',
         walls_panels: 'Wände/Verkleidung', windows_blinds: 'Fenster/Rollos',
@@ -526,6 +598,13 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
         col = col === 0 ? 1 : 0
       })
       if (col === 1) yPos += 6
+    } else {
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(150)
+      pdf.text('Keine Daten vorhanden', 15, yPos)
+      pdf.setTextColor(0)
+      yPos += 6
     }
     yPos += 8
 
@@ -539,8 +618,8 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     pdf.line(15, yPos, 195, yPos)
     yPos += 6
 
-    if (protocol.equipment_checklist) {
-      const eq = protocol.equipment_checklist
+    // FIX: Jetzt wird "equipment" (die geparste Variable) verwendet
+    if (equipment) {
       const eqLabels = {
         spare_tire: 'Ersatzrad', jack: 'Wagenheber', tool_kit: 'Werkzeugset',
         first_aid_kit: 'Verbandskasten', warning_triangle: 'Warndreieck',
@@ -555,14 +634,21 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
       Object.keys(eqLabels).forEach((key) => {
         yPos = checkPageBreak(pdf, yPos, 8)
         const xPos = col === 0 ? 15 : 105
-        const present = eq[key]?.present !== undefined ? (eq[key].present ? '[X]' : '[ ]') : '[X]'
+        const present = equipment[key]?.present !== undefined ? (equipment[key].present ? '[X]' : '[ ]') : '[X]'
         pdf.text(`${present} ${eqLabels[key]}`, xPos, yPos)
         if (col === 1) yPos += 6
         col = col === 0 ? 1 : 0
       })
       if (col === 1) yPos += 6
       yPos += 4
-      pdf.text(`Schlüssel: ${eq.keys_count || '-'} Stück`, 15, yPos)
+      pdf.text(`Schlüssel: ${equipment.keys_count || '-'} Stück`, 15, yPos)
+    } else {
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(150)
+      pdf.text('Keine Daten vorhanden', 15, yPos)
+      pdf.setTextColor(0)
+      yPos += 6
     }
     yPos += 12
 
@@ -612,8 +698,23 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
       for (const url of photoUrls) {
         yPos = checkPageBreak(pdf, yPos, 75)
         const xPos = col === 0 ? 15 : 105
+        console.log('Lade Fahrzeugfoto (Base64):', url)
         const imgData = await loadImageAsBase64(url)
-        if (imgData) { try { pdf.addImage(imgData, 'JPEG', xPos, yPos, 85, 60) } catch (e) {} }
+        if (imgData) {
+          try {
+            pdf.addImage(imgData, 'JPEG', xPos, yPos, 85, 60)
+          } catch (e) {
+            pdf.setFontSize(8)
+            pdf.setTextColor(150)
+            pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30)
+            pdf.setTextColor(0)
+          }
+        } else {
+          pdf.setFontSize(8)
+          pdf.setTextColor(150)
+          pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30)
+          pdf.setTextColor(0)
+        }
         if (col === 1) yPos += 70
         col = col === 0 ? 1 : 0
       }
