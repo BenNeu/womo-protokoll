@@ -8,8 +8,6 @@ const loadImageAsBase64 = async (url) => {
     const response = await fetch(proxyUrl)
     if (!response.ok) throw new Error(`Status ${response.status}`)
     const blob = await response.blob()
-
-    // Bild komprimieren bevor es ins PDF kommt
     return new Promise((resolve) => {
       const img = new Image()
       const objectUrl = URL.createObjectURL(blob)
@@ -102,12 +100,9 @@ export const generateProtocolPDF = async (protocol, rental) => {
     try { pdf.addImage(logoImg, 'PNG', 15, yPos, 30, 30) } catch (e) {}
 
     const protocolType = protocol.protocol_type === 'handover' ? 'Übergabe' : 'Rücknahme'
-    pdf.setFontSize(20)
-    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(20); pdf.setFont('helvetica', 'bold')
     pdf.text(`${protocolType}protokoll`, 105, yPos + 10, { align: 'center' })
-    pdf.setFontSize(11)
-    pdf.setFont('helvetica', 'normal')
-    pdf.setTextColor(100)
+    pdf.setFontSize(11); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100)
     const protocolDate = new Date(protocol.created_at)
     pdf.text(`Erstellt am ${protocolDate.toLocaleDateString('de-DE')} um ${protocolDate.toLocaleTimeString('de-DE')}`, 105, yPos + 18, { align: 'center' })
     pdf.setTextColor(0)
@@ -129,26 +124,18 @@ export const generateProtocolPDF = async (protocol, rental) => {
     // FAHRZEUGDATEN
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Fahrzeugdaten', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
     pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
     pdf.text(`Kilometerstand: ${protocol.mileage} km`, 15, yPos)
-    pdf.text(`Tankstand: ${protocol.fuel_level}`, 80, yPos)
-    yPos += 6
+    pdf.text(`Tankstand: ${protocol.fuel_level}`, 80, yPos); yPos += 6
     pdf.text(`Frischwasser: ${protocol.fresh_water_tank}`, 15, yPos)
-    pdf.text(`Abwasser: ${protocol.waste_water_tank}`, 80, yPos)
-    yPos += 12
+    pdf.text(`Abwasser: ${protocol.waste_water_tank}`, 80, yPos); yPos += 12
 
     // ÄUSSERER ZUSTAND
     yPos = checkPageBreak(pdf, yPos, 50)
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Äußerer Zustand', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
     if (exterior) {
       const exteriorLabels = {
         paint_body: 'Lack/Karosserie', windows_glass: 'Fenster/Scheiben',
@@ -176,10 +163,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
     yPos = checkPageBreak(pdf, yPos, 50)
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Innenausstattung', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
     if (interior) {
       const interiorLabels = {
         upholstery_seats: 'Polster/Sitze', carpet_flooring: 'Teppich/Boden',
@@ -210,10 +194,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
     yPos = checkPageBreak(pdf, yPos, 40)
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Ausrüstung & Inventar', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
     if (equipment) {
       const eqLabels = {
         spare_tire: 'Ersatzrad', jack: 'Wagenheber', tool_kit: 'Werkzeugset',
@@ -247,24 +228,18 @@ export const generateProtocolPDF = async (protocol, rental) => {
       yPos = checkPageBreak(pdf, yPos, 20)
       pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
       pdf.text('Schäden / Anmerkungen', 15, yPos)
-      yPos += 7
-      pdf.setDrawColor(220, 38, 38)
-      pdf.line(15, yPos, 195, yPos)
-      yPos += 6
+      yPos += 7; pdf.setDrawColor(220, 38, 38); pdf.line(15, yPos, 195, yPos); yPos += 6
       pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
       const lines = pdf.splitTextToSize(protocol.damage_notes, 180)
-      pdf.text(lines, 15, yPos)
-      yPos += lines.length * 5 + 8
+      pdf.text(lines, 15, yPos); yPos += lines.length * 5 + 8
     }
     if (protocol.additional_notes) {
       yPos = checkPageBreak(pdf, yPos, 20)
       pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
-      pdf.text('Zusätzliche Notizen', 15, yPos)
-      yPos += 6
+      pdf.text('Zusätzliche Notizen', 15, yPos); yPos += 6
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10)
       const lines = pdf.splitTextToSize(protocol.additional_notes, 180)
-      pdf.text(lines, 15, yPos)
-      yPos += lines.length * 5 + 8
+      pdf.text(lines, 15, yPos); yPos += lines.length * 5 + 8
     }
 
     // FAHRZEUGFOTOS
@@ -272,10 +247,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
       pdf.addPage(); yPos = 20
       pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
       pdf.text(`Fahrzeugfotos (${photoUrls.length})`, 15, yPos)
-      yPos += 7
-      pdf.setDrawColor(16, 185, 129)
-      pdf.line(15, yPos, 195, yPos)
-      yPos += 10
+      yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 10
       let col = 0
       const photoW = 85, photoH = 60
       for (const url of photoUrls) {
@@ -284,12 +256,10 @@ export const generateProtocolPDF = async (protocol, rental) => {
         const imgData = await loadImageAsBase64(url)
         if (imgData) {
           try { pdf.addImage(imgData, 'JPEG', xPos, yPos, photoW, photoH) } catch (e) {
-            pdf.setFontSize(8); pdf.setTextColor(150)
-            pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30); pdf.setTextColor(0)
+            pdf.setFontSize(8); pdf.setTextColor(150); pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30); pdf.setTextColor(0)
           }
         } else {
-          pdf.setFontSize(8); pdf.setTextColor(150)
-          pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30); pdf.setTextColor(0)
+          pdf.setFontSize(8); pdf.setTextColor(150); pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30); pdf.setTextColor(0)
         }
         if (col === 1) yPos += photoH + 10
         col = col === 0 ? 1 : 0
@@ -302,10 +272,7 @@ export const generateProtocolPDF = async (protocol, rental) => {
       pdf.addPage(); yPos = 20
       pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
       pdf.text('Ausweisdokumente', 15, yPos)
-      yPos += 7
-      pdf.setDrawColor(16, 185, 129)
-      pdf.line(15, yPos, 195, yPos)
-      yPos += 10
+      yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 10
       if (idPhotos.length > 0) {
         pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
         pdf.text('Personalausweis:', 15, yPos); yPos += 8
@@ -336,34 +303,29 @@ export const generateProtocolPDF = async (protocol, rental) => {
       }
     }
 
-    // UNTERSCHRIFTEN
+    // UNTERSCHRIFTEN – FIX: direkt als data URL verwenden, kein Proxy
     pdf.addPage(); yPos = 20
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschriften', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 15
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 15
+
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mieter:', 15, yPos); yPos += 8
     if (protocol.customer_signature) {
-      const sigData = await loadImageAsBase64(protocol.customer_signature)
-      if (sigData) { try { pdf.addImage(sigData, 'PNG', 15, yPos, 85, 35) } catch (e) {} }
+      try { pdf.addImage(protocol.customer_signature, 'PNG', 15, yPos, 85, 35) } catch (e) {}
     }
-    pdf.setDrawColor(100)
-    pdf.line(15, yPos + 38, 100, yPos + 38)
+    pdf.setDrawColor(100); pdf.line(15, yPos + 38, 100, yPos + 38)
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
     pdf.text(`${rental.customer_name}`, 15, yPos + 44)
     pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')}`, 15, yPos + 50)
+
     yPos -= 8
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mitarbeiter:', 110, yPos); yPos += 8
     if (protocol.staff_signature) {
-      const sigData = await loadImageAsBase64(protocol.staff_signature)
-      if (sigData) { try { pdf.addImage(sigData, 'PNG', 110, yPos, 85, 35) } catch (e) {} }
+      try { pdf.addImage(protocol.staff_signature, 'PNG', 110, yPos, 85, 35) } catch (e) {}
     }
-    pdf.setDrawColor(100)
-    pdf.line(110, yPos + 38, 195, yPos + 38)
+    pdf.setDrawColor(100); pdf.line(110, yPos + 38, 195, yPos + 38)
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
     pdf.text(`${protocol.completed_by}`, 110, yPos + 44)
     pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')}`, 110, yPos + 50)
@@ -385,7 +347,6 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     const pdf = new jsPDF('p', 'mm', 'a4')
     let yPos = 20
 
-    // HEADER
     const logoImg = new Image()
     logoImg.src = '/logo.png'
     await new Promise((resolve) => { logoImg.onload = resolve; logoImg.onerror = resolve })
@@ -396,10 +357,8 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     pdf.setFontSize(11); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100)
     const cleaningDate = new Date(protocol.cleaning_date)
     pdf.text(`Erstellt am ${cleaningDate.toLocaleDateString('de-DE')} um ${cleaningDate.toLocaleTimeString('de-DE')}`, 105, yPos + 18, { align: 'center' })
-    pdf.setTextColor(0)
-    yPos += 40
+    pdf.setTextColor(0); yPos += 40
 
-    // STAMMDATEN
     pdf.setFillColor(240, 249, 245)
     pdf.roundedRect(15, yPos, 180, 32, 3, 3, 'F')
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
@@ -411,18 +370,22 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
     pdf.text(`Kennzeichen: ${rental.vehicle_license_plate || '-'}`, 110, yPos + 23)
     yPos += 42
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
-    pdf.text(`Mitarbeiter: ${protocol.employee_name}`, 15, yPos)
-    yPos += 12
+    pdf.text(`Mitarbeiter: ${protocol.employee_name}`, 15, yPos); yPos += 12
 
-    // SECTION 1
-    pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
-    pdf.text('1. Außen & Technik', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
-    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
-    const section1 = [
+    const renderSection = (title, items) => {
+      yPos = checkPageBreak(pdf, yPos, 40)
+      pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
+      pdf.text(title, 15, yPos); yPos += 7
+      pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
+      pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
+      items.forEach(item => {
+        yPos = checkPageBreak(pdf, yPos, 8)
+        pdf.text(`${item.value ? '[X]' : '[ ]'} ${item.label}`, 20, yPos); yPos += 6
+      })
+      yPos += 5
+    }
+
+    renderSection('1. Außen & Technik', [
       { label: 'Außenwäsche', value: protocol.exterior_wash },
       { label: 'Sichtprüfung Karosserie', value: protocol.exterior_inspection },
       { label: 'Reifen prüfen', value: protocol.tire_check },
@@ -430,20 +393,9 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       { label: 'Markise reinigen', value: protocol.awning_clean },
       { label: 'Dach / Solarpanels', value: protocol.roof_check },
       { label: 'Unterboden', value: protocol.underbody_check },
-    ]
-    section1.forEach(item => { yPos = checkPageBreak(pdf, yPos, 8); pdf.text(`${item.value ? '[X]' : '[ ]'} ${item.label}`, 20, yPos); yPos += 6 })
-    yPos += 5
+    ])
 
-    // SECTION 2
-    yPos = checkPageBreak(pdf, yPos, 60)
-    pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
-    pdf.text('2. Innenraum - Reinigung', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
-    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
-    const section2 = [
+    renderSection('2. Innenraum - Reinigung', [
       { label: 'Komplett saugen', value: protocol.vacuum_interior },
       { label: 'Boden wischen', value: protocol.mop_floor },
       { label: 'Küche reinigen', value: protocol.kitchen_clean },
@@ -453,40 +405,18 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       { label: 'Mülleimer leeren', value: protocol.trash_empty },
       { label: 'Fenster innen', value: protocol.windows_inside },
       { label: 'Geruchskontrolle', value: protocol.odor_check },
-    ]
-    section2.forEach(item => { yPos = checkPageBreak(pdf, yPos, 8); pdf.text(`${item.value ? '[X]' : '[ ]'} ${item.label}`, 20, yPos); yPos += 6 })
-    yPos += 5
+    ])
 
-    // SECTION 3
-    yPos = checkPageBreak(pdf, yPos, 50)
-    pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
-    pdf.text('3. Wasser, Gas & Strom', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
-    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
-    const section3 = [
+    renderSection('3. Wasser, Gas & Strom', [
       { label: 'Frischwassertank befüllen', value: protocol.freshwater_fill },
       { label: 'Abwassertank leeren', value: protocol.wastewater_empty },
       { label: 'WC-Zusatz auffüllen', value: protocol.toilet_additive },
       { label: 'Gasflaschen prüfen', value: protocol.gas_check },
       { label: 'Stromanschluss prüfen', value: protocol.power_check },
       { label: 'Batterie prüfen', value: protocol.battery_check },
-    ]
-    section3.forEach(item => { yPos = checkPageBreak(pdf, yPos, 8); pdf.text(`${item.value ? '[X]' : '[ ]'} ${item.label}`, 20, yPos); yPos += 6 })
-    yPos += 5
+    ])
 
-    // SECTION 4
-    yPos = checkPageBreak(pdf, yPos, 55)
-    pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
-    pdf.text('4. Ausstattung & Inventar', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
-    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
-    const section4 = [
+    renderSection('4. Ausstattung & Inventar', [
       { label: 'Geschirr & Besteck vollständig', value: protocol.dishes_complete },
       { label: 'Töpfe & Pfannen vollständig', value: protocol.cookware_complete },
       { label: 'Campingmöbel vorhanden', value: protocol.camping_furniture },
@@ -495,53 +425,31 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       { label: 'Wasserschlauch vorhanden', value: protocol.water_hose },
       { label: 'Warnweste & Verbandskasten', value: protocol.safety_equipment },
       { label: 'Bedienungsanleitungen vorhanden', value: protocol.manuals_present },
-    ]
-    section4.forEach(item => { yPos = checkPageBreak(pdf, yPos, 8); pdf.text(`${item.value ? '[X]' : '[ ]'} ${item.label}`, 20, yPos); yPos += 6 })
-    yPos += 5
+    ])
 
-    // SECTION 5
-    yPos = checkPageBreak(pdf, yPos, 50)
-    pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
-    pdf.text('5. Abschlusskontrolle', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
-    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
-    const section5 = [
+    renderSection('5. Abschlusskontrolle', [
       { label: 'Schlüssel vollständig', value: protocol.keys_complete },
       { label: 'Dokumentenmappe vollständig', value: protocol.documents_complete },
       { label: 'Fahrzeug fahrbereit', value: protocol.vehicle_ready },
       { label: 'Fotos gemacht', value: protocol.photos_taken },
-    ]
-    section5.forEach(item => { yPos = checkPageBreak(pdf, yPos, 8); pdf.text(`${item.value ? '[X]' : '[ ]'} ${item.label}`, 20, yPos); yPos += 6 })
-    yPos += 5
+    ])
 
-    // NOTIZEN
     if (protocol.notes) {
       yPos = checkPageBreak(pdf, yPos, 25)
       pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
-      pdf.text('Notizen / Anmerkungen', 15, yPos)
-      yPos += 7
-      pdf.setDrawColor(16, 185, 129)
-      pdf.line(15, yPos, 195, yPos)
-      yPos += 6
+      pdf.text('Notizen / Anmerkungen', 15, yPos); yPos += 7
+      pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
       pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
       const lines = pdf.splitTextToSize(protocol.notes, 180)
-      pdf.text(lines, 15, yPos)
-      yPos += lines.length * 5 + 8
+      pdf.text(lines, 15, yPos); yPos += lines.length * 5 + 8
     }
 
-    // FOTOS
     const photoUrls = parseArray(protocol.photo_urls)
     if (photoUrls.length > 0) {
       pdf.addPage(); yPos = 20
       pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
       pdf.text(`Fotos (${photoUrls.length})`, 15, yPos)
-      yPos += 7
-      pdf.setDrawColor(16, 185, 129)
-      pdf.line(15, yPos, 195, yPos)
-      yPos += 10
+      yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 10
       let col = 0
       for (const url of photoUrls) {
         yPos = checkPageBreak(pdf, yPos, 75)
@@ -554,24 +462,18 @@ export const generateCleaningProtocolPDF = async (protocol, rental) => {
       if (col === 1) yPos += 70
     }
 
-    // UNTERSCHRIFT
+    // UNTERSCHRIFT – FIX: direkt verwenden
     yPos = checkPageBreak(pdf, yPos, 70)
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
-    pdf.text('Unterschrift Mitarbeiter', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 15
+    pdf.text('Unterschrift Mitarbeiter', 15, yPos); yPos += 7
+    pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 15
     if (protocol.employee_signature) {
       try { pdf.addImage(protocol.employee_signature, 'PNG', 15, yPos, 80, 30) } catch (e) {}
       yPos += 35
     }
-    pdf.setDrawColor(100)
-    pdf.line(15, yPos, 100, yPos)
-    yPos += 5
+    pdf.setDrawColor(100); pdf.line(15, yPos, 100, yPos); yPos += 5
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
-    pdf.text(`${protocol.employee_name}`, 15, yPos)
-    yPos += 5
+    pdf.text(`${protocol.employee_name}`, 15, yPos); yPos += 5
     pdf.text(`Datum: ${cleaningDate.toLocaleDateString('de-DE')}`, 15, yPos)
 
     const fileName = `Aufbereitung_${rental.rental_number}_${cleaningDate.toISOString().split('T')[0]}.pdf`
@@ -611,8 +513,7 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     pdf.setFontSize(11); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100)
     const protocolDate = new Date(protocol.created_at)
     pdf.text(`Erstellt am ${protocolDate.toLocaleDateString('de-DE')} um ${protocolDate.toLocaleTimeString('de-DE')}`, 105, yPos + 18, { align: 'center' })
-    pdf.setTextColor(0)
-    yPos += 40
+    pdf.setTextColor(0); yPos += 40
 
     // STAMMDATEN
     pdf.setFillColor(240, 249, 245)
@@ -630,26 +531,18 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     // FAHRZEUGDATEN
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Fahrzeugdaten', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
     pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
     pdf.text(`Kilometerstand: ${protocol.mileage} km`, 15, yPos)
-    pdf.text(`Tankstand: ${protocol.fuel_level}`, 80, yPos)
-    yPos += 6
+    pdf.text(`Tankstand: ${protocol.fuel_level}`, 80, yPos); yPos += 6
     pdf.text(`Frischwasser: ${protocol.fresh_water_tank}`, 15, yPos)
-    pdf.text(`Abwasser: ${protocol.waste_water_tank}`, 80, yPos)
-    yPos += 12
+    pdf.text(`Abwasser: ${protocol.waste_water_tank}`, 80, yPos); yPos += 12
 
     // ÄUSSERER ZUSTAND
     yPos = checkPageBreak(pdf, yPos, 50)
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Äußerer Zustand', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
     if (exterior) {
       const exteriorLabels = {
         paint_body: 'Lack/Karosserie', windows_glass: 'Fenster/Scheiben',
@@ -677,10 +570,7 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     yPos = checkPageBreak(pdf, yPos, 50)
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Innenausstattung', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
     if (interior) {
       const interiorLabels = {
         upholstery_seats: 'Polster/Sitze', carpet_flooring: 'Teppich/Boden',
@@ -711,10 +601,7 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
     yPos = checkPageBreak(pdf, yPos, 40)
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Ausrüstung & Inventar', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 6
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 6
     if (equipment) {
       const eqLabels = {
         spare_tire: 'Ersatzrad', jack: 'Wagenheber', tool_kit: 'Werkzeugset',
@@ -748,24 +635,18 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
       yPos = checkPageBreak(pdf, yPos, 20)
       pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
       pdf.text('Schäden / Anmerkungen', 15, yPos)
-      yPos += 7
-      pdf.setDrawColor(220, 38, 38)
-      pdf.line(15, yPos, 195, yPos)
-      yPos += 6
+      yPos += 7; pdf.setDrawColor(220, 38, 38); pdf.line(15, yPos, 195, yPos); yPos += 6
       pdf.setFontSize(10); pdf.setFont('helvetica', 'normal')
       const lines = pdf.splitTextToSize(protocol.damage_notes, 180)
-      pdf.text(lines, 15, yPos)
-      yPos += lines.length * 5 + 8
+      pdf.text(lines, 15, yPos); yPos += lines.length * 5 + 8
     }
     if (protocol.additional_notes) {
       yPos = checkPageBreak(pdf, yPos, 20)
       pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
-      pdf.text('Zusätzliche Notizen', 15, yPos)
-      yPos += 6
+      pdf.text('Zusätzliche Notizen', 15, yPos); yPos += 6
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10)
       const lines = pdf.splitTextToSize(protocol.additional_notes, 180)
-      pdf.text(lines, 15, yPos)
-      yPos += lines.length * 5 + 8
+      pdf.text(lines, 15, yPos); yPos += lines.length * 5 + 8
     }
 
     // FAHRZEUGFOTOS
@@ -773,10 +654,7 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
       pdf.addPage(); yPos = 20
       pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
       pdf.text(`Fahrzeugfotos (${photoUrls.length})`, 15, yPos)
-      yPos += 7
-      pdf.setDrawColor(16, 185, 129)
-      pdf.line(15, yPos, 195, yPos)
-      yPos += 10
+      yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 10
       let col = 0
       for (const url of photoUrls) {
         yPos = checkPageBreak(pdf, yPos, 75)
@@ -784,12 +662,10 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
         const imgData = await loadImageAsBase64(url)
         if (imgData) {
           try { pdf.addImage(imgData, 'JPEG', xPos, yPos, 85, 60) } catch (e) {
-            pdf.setFontSize(8); pdf.setTextColor(150)
-            pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30); pdf.setTextColor(0)
+            pdf.setFontSize(8); pdf.setTextColor(150); pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30); pdf.setTextColor(0)
           }
         } else {
-          pdf.setFontSize(8); pdf.setTextColor(150)
-          pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30); pdf.setTextColor(0)
+          pdf.setFontSize(8); pdf.setTextColor(150); pdf.text('[Foto nicht verfügbar]', xPos + 5, yPos + 30); pdf.setTextColor(0)
         }
         if (col === 1) yPos += 70
         col = col === 0 ? 1 : 0
@@ -802,10 +678,7 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
       pdf.addPage(); yPos = 20
       pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
       pdf.text('Ausweisdokumente', 15, yPos)
-      yPos += 7
-      pdf.setDrawColor(16, 185, 129)
-      pdf.line(15, yPos, 195, yPos)
-      yPos += 10
+      yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 10
       if (idPhotos.length > 0) {
         pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
         pdf.text('Personalausweis:', 15, yPos); yPos += 8
@@ -836,34 +709,29 @@ export const generateProtocolPDFBase64 = async (protocol, rental) => {
       }
     }
 
-    // UNTERSCHRIFTEN
+    // UNTERSCHRIFTEN – FIX: direkt als data URL verwenden, kein Proxy
     pdf.addPage(); yPos = 20
     pdf.setFontSize(13); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschriften', 15, yPos)
-    yPos += 7
-    pdf.setDrawColor(16, 185, 129)
-    pdf.line(15, yPos, 195, yPos)
-    yPos += 15
+    yPos += 7; pdf.setDrawColor(16, 185, 129); pdf.line(15, yPos, 195, yPos); yPos += 15
+
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mieter:', 15, yPos); yPos += 8
     if (protocol.customer_signature) {
-      const sigData = await loadImageAsBase64(protocol.customer_signature)
-      if (sigData) { try { pdf.addImage(sigData, 'PNG', 15, yPos, 85, 35) } catch (e) {} }
+      try { pdf.addImage(protocol.customer_signature, 'PNG', 15, yPos, 85, 35) } catch (e) {}
     }
-    pdf.setDrawColor(100)
-    pdf.line(15, yPos + 38, 100, yPos + 38)
+    pdf.setDrawColor(100); pdf.line(15, yPos + 38, 100, yPos + 38)
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
     pdf.text(`${rental.customer_name}`, 15, yPos + 44)
     pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')}`, 15, yPos + 50)
+
     yPos -= 8
     pdf.setFontSize(11); pdf.setFont('helvetica', 'bold')
     pdf.text('Unterschrift Mitarbeiter:', 110, yPos); yPos += 8
     if (protocol.staff_signature) {
-      const sigData = await loadImageAsBase64(protocol.staff_signature)
-      if (sigData) { try { pdf.addImage(sigData, 'PNG', 110, yPos, 85, 35) } catch (e) {} }
+      try { pdf.addImage(protocol.staff_signature, 'PNG', 110, yPos, 85, 35) } catch (e) {}
     }
-    pdf.setDrawColor(100)
-    pdf.line(110, yPos + 38, 195, yPos + 38)
+    pdf.setDrawColor(100); pdf.line(110, yPos + 38, 195, yPos + 38)
     pdf.setFontSize(9); pdf.setFont('helvetica', 'normal')
     pdf.text(`${protocol.completed_by}`, 110, yPos + 44)
     pdf.text(`Datum: ${protocolDate.toLocaleDateString('de-DE')}`, 110, yPos + 50)
