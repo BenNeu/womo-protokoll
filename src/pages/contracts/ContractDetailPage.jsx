@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { fetchContract } from '../../services/contractService'
-import { generateContractPDF } from '../../services/contractPdfService'
 import ContractSignature from '../../components/contracts/ContractSignature'
 import './ContractDetailPage.css'
 import { generateContractPDF, uploadContractPDF } from '../../services/contractPdfService'
