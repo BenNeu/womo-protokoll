@@ -29,6 +29,10 @@ try {
       reader.readAsDataURL(blob)
     })
     contractFileName = `Mietvertrag_${contractData.contract_number}.pdf`
+console.log('Vertrag Fetch Status:', response.status)
+console.log('Vertrag Blob Size:', blob.size)
+console.log('Vertrag Base64 Länge:', contractPdfBase64?.length)
+console.log('Vertrag gefunden:', contractFileName)
   }
 } catch (err) {
   console.log('Kein Vertrags-PDF gefunden:', err.message)
