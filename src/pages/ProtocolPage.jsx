@@ -21,7 +21,7 @@ try {
     .single()
 
   if (contractData?.pdf_url) {
-    const response = await fetch(contractData.pdf_url)
+    const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(contractData.pdf_url)}`)
     const blob = await response.blob()
     contractPdfBase64 = await new Promise((resolve) => {
       const reader = new FileReader()
