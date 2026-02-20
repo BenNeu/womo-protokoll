@@ -4,6 +4,7 @@ import { fetchContract } from '../../services/contractService'
 import { generateContractPDF } from '../../services/contractPdfService'
 import ContractSignature from '../../components/contracts/ContractSignature'
 import './ContractDetailPage.css'
+import { generateContractPDF, uploadContractPDF } from '../../services/contractPdfService'
 
 const ContractDetailPage = () => {
   const { id } = useParams()
@@ -34,22 +35,27 @@ const ContractDetailPage = () => {
     return new Date(date).toLocaleDateString('de-DE')
   }
 
-  const handleSignatureComplete = () => {
-    loadContract()
+ const handleSignatureComplete = async () => {
+  await loadContract()
+  // Nach Unterschrift automatisch PDF hochladen
+  try {
+    await uploadContractPDF(id)
+    console.log('✅ Vertrags-PDF automatisch gespeichert')
+  } catch (err) {
+    console.error('PDF Upload fehlgeschlagen:', err)
   }
+}
 
-  const handleDownloadPDF = async () => {
-    try {
-      setLoading(true)
-      await generateContractPDF(id)
-      alert('PDF wird heruntergeladen...')
-    } catch (err) {
-      console.error('PDF Error:', err)
-      alert('Fehler beim PDF-Export: ' + err.message)
-    } finally {
-      setLoading(false)
-    }
+const handleDownloadPDF = async () => {
+  try {
+    setLoading(true)
+    await generateContractPDF(id)
+  } catch (err) {
+    alert('Fehler beim PDF-Export: ' + err.message)
+  } finally {
+    setLoading(false)
   }
+}
 
   if (loading) return <div className="loading">Lädt...</div>
   if (error) return <div className="error">{error}</div>

@@ -10,18 +10,44 @@ const sendProtocolEmail = async (savedProtocol, rental, type) => {
   const RETRY_DELAY = 2000
 
   const pdfBase64 = await generateProtocolPDFBase64(savedProtocol, rental)
+  // Vertrags-PDF aus Supabase holen (über rental_id)
+let contractPdfBase64 = null
+let contractFileName = null
+try {
+  const { data: contractData } = await supabase
+    .from('OrcaCampers_rental_contracts')
+    .select('pdf_url, contract_number')
+    .eq('rental_id', rental.id)
+    .single()
+
+  if (contractData?.pdf_url) {
+    const response = await fetch(contractData.pdf_url)
+    const blob = await response.blob()
+    contractPdfBase64 = await new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result.split(',')[1])
+      reader.readAsDataURL(blob)
+    })
+    contractFileName = `Mietvertrag_${contractData.contract_number}.pdf`
+  }
+} catch (err) {
+  console.log('Kein Vertrags-PDF gefunden:', err.message)
+}
   const protocolType = type === 'handover' ? 'Übergabe' : 'Rücknahme'
   const fileName = `${protocolType}_${rental.rental_number}.pdf`
 
   const payload = {
-    customer_email: rental.customer_email,
-    customer_name: rental.customer_name,
-    rental_number: rental.rental_number,
-    protocol_type: protocolType,
-    vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
-    pdf_base64: pdfBase64,
-    pdf_filename: fileName
-  }
+  customer_email: rental.customer_email,
+  customer_name: rental.customer_name,
+  rental_number: rental.rental_number,
+  protocol_type: protocolType,
+  vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
+  pdf_base64: pdfBase64,
+  pdf_filename: fileName,
+  // Vertrags-PDF optional
+  contract_pdf_base64: contractPdfBase64,
+  contract_pdf_filename: contractFileName
+}
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
