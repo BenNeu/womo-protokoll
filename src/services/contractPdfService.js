@@ -49,7 +49,7 @@ const generateContractPDFBase64 = async (contractId) => {
 
   const replacements = {
     contract_number: contract.contract_number || '',
-    signature_date: new Date().toLocaleDateString('de-DE'),
+    signature_date: new Date().toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric'}),
     customer_name: contract.customer_name || '',
     customer_address: contract.customer_address || '',
     customer_phone: contract.customer_phone || '',
