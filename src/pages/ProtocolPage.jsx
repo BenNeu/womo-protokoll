@@ -11,50 +11,25 @@ const sendProtocolEmail = async (savedProtocol, rental, type, formData) => {
 
   const pdfBase64 = await generateProtocolPDFBase64(savedProtocol, rental)
 
-  // Vertrags-PDF neu generieren mit Unterschriften
-  let contractPdfBase64 = null
-  let contractFileName = null
-
+  // Vertragsdaten aus Supabase holen und Unterschriften anhängen
+  let contractData = null
   try {
-    const { data: contractData } = await supabase
+    const { data } = await supabase
       .from('OrcaCampers_rental_contracts')
       .select('*')
       .eq('rental_id', rental.id)
       .single()
 
-    if (contractData) {
-      const contractPayload = {
-        ...contractData,
-        signature_date: new Date().toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric'}),
+    if (data) {
+      contractData = {
+        ...data,
         signature_customer: formData.customer_signature,
-        signature_landlord: formData.staff_signature
+        signature_landlord: formData.staff_signature,
+        signature_date: new Date().toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric'})
       }
-
-      const contractHtmlResponse = await fetch('/api/create-contract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(contractPayload)
-      })
-
-      const contractHtml = await contractHtmlResponse.text()
-
-      const pdfResponse = await fetch('http://10.0.1.7:3000/pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ html: contractHtml })
-})
-
-      const pdfBlob = await pdfResponse.blob()
-      contractPdfBase64 = await new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result.split(',')[1])
-        reader.readAsDataURL(pdfBlob)
-      })
-      contractFileName = `Mietvertrag_${contractData.contract_number}.pdf`
-      console.log('✅ Vertrag mit Unterschriften generiert:', contractFileName)
     }
   } catch (err) {
-    console.log('Kein Vertrags-PDF generiert:', err.message)
+    console.log('Kein Vertrag gefunden:', err.message)
   }
 
   const protocolType = type === 'handover' ? 'Übergabe' : 'Rücknahme'
@@ -68,8 +43,7 @@ const sendProtocolEmail = async (savedProtocol, rental, type, formData) => {
     vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
     pdf_base64: pdfBase64,
     pdf_filename: fileName,
-    contract_pdf_base64: contractPdfBase64,
-    contract_pdf_filename: contractFileName
+    contract_data: contractData
   }
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -239,11 +213,9 @@ export default function ProtocolPage() {
         return
       }
 
-      // Sofort weiterleiten – Email läuft im Hintergrund
       alert('✅ Protokoll gespeichert! E-Mail wird im Hintergrund gesendet...')
       navigate('/')
 
-      // Email im Hintergrund mit Retry
       sendProtocolEmail(savedProtocol, rental, type, formData).catch(err => {
         console.error('Hintergrund-Email fehlgeschlagen:', err)
       })
