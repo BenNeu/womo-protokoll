@@ -38,11 +38,11 @@ const sendProtocolEmail = async (savedProtocol, rental, type, formData) => {
 
       const contractHtml = await contractHtmlResponse.text()
 
-      const pdfResponse = await fetch('/api/contract-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ html: contractHtml })
-      })
+      const pdfResponse = await fetch('http://10.0.1.7:3000/pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html: contractHtml })
+})
 
       const pdfBlob = await pdfResponse.blob()
       contractPdfBase64 = await new Promise((resolve) => {
