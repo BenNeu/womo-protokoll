@@ -5,53 +5,72 @@ import PhotoCapture from '../components/PhotoCapture'
 import SignaturePad from '../components/SignaturePad'
 import { generateProtocolPDFBase64 } from '../services/pdfExport'
 
-const sendProtocolEmail = async (savedProtocol, rental, type) => {
+const sendProtocolEmail = async (savedProtocol, rental, type, formData) => {
   const MAX_RETRIES = 3
   const RETRY_DELAY = 2000
 
   const pdfBase64 = await generateProtocolPDFBase64(savedProtocol, rental)
-  // Vertrags-PDF aus Supabase holen (über rental_id)
-let contractPdfBase64 = null
-let contractFileName = null
-try {
-  const { data: contractData } = await supabase
-    .from('OrcaCampers_rental_contracts')
-    .select('pdf_url, contract_number')
-    .eq('rental_id', rental.id)
-    .single()
 
-  if (contractData?.pdf_url) {
-    const response = await fetch(`/api/image-proxy?url=${encodeURIComponent(contractData.pdf_url)}`)
-    const blob = await response.blob()
-    contractPdfBase64 = await new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result.split(',')[1])
-      reader.readAsDataURL(blob)
-    })
-    contractFileName = `Mietvertrag_${contractData.contract_number}.pdf`
-console.log('Vertrag Fetch Status:', response.status)
-console.log('Vertrag Blob Size:', blob.size)
-console.log('Vertrag Base64 Länge:', contractPdfBase64?.length)
-console.log('Vertrag gefunden:', contractFileName)
+  // Vertrags-PDF neu generieren mit Unterschriften
+  let contractPdfBase64 = null
+  let contractFileName = null
+
+  try {
+    const { data: contractData } = await supabase
+      .from('OrcaCampers_rental_contracts')
+      .select('*')
+      .eq('rental_id', rental.id)
+      .single()
+
+    if (contractData) {
+      const contractPayload = {
+        ...contractData,
+        signature_date: new Date().toLocaleDateString('de-DE', {day: '2-digit', month: '2-digit', year: 'numeric'}),
+        signature_customer: formData.customer_signature,
+        signature_landlord: formData.staff_signature
+      }
+
+      const contractHtmlResponse = await fetch('/api/create-contract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contractPayload)
+      })
+
+      const contractHtml = await contractHtmlResponse.text()
+
+      const pdfResponse = await fetch('/api/contract-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html: contractHtml })
+      })
+
+      const pdfBlob = await pdfResponse.blob()
+      contractPdfBase64 = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result.split(',')[1])
+        reader.readAsDataURL(pdfBlob)
+      })
+      contractFileName = `Mietvertrag_${contractData.contract_number}.pdf`
+      console.log('✅ Vertrag mit Unterschriften generiert:', contractFileName)
+    }
+  } catch (err) {
+    console.log('Kein Vertrags-PDF generiert:', err.message)
   }
-} catch (err) {
-  console.log('Kein Vertrags-PDF gefunden:', err.message)
-}
+
   const protocolType = type === 'handover' ? 'Übergabe' : 'Rücknahme'
   const fileName = `${protocolType}_${rental.rental_number}.pdf`
 
   const payload = {
-  customer_email: rental.customer_email,
-  customer_name: rental.customer_name,
-  rental_number: rental.rental_number,
-  protocol_type: protocolType,
-  vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
-  pdf_base64: pdfBase64,
-  pdf_filename: fileName,
-  // Vertrags-PDF optional
-  contract_pdf_base64: contractPdfBase64,
-  contract_pdf_filename: contractFileName
-}
+    customer_email: rental.customer_email,
+    customer_name: rental.customer_name,
+    rental_number: rental.rental_number,
+    protocol_type: protocolType,
+    vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
+    pdf_base64: pdfBase64,
+    pdf_filename: fileName,
+    contract_pdf_base64: contractPdfBase64,
+    contract_pdf_filename: contractFileName
+  }
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -225,7 +244,7 @@ export default function ProtocolPage() {
       navigate('/')
 
       // Email im Hintergrund mit Retry
-      sendProtocolEmail(savedProtocol, rental, type).catch(err => {
+      sendProtocolEmail(savedProtocol, rental, type, formData).catch(err => {
         console.error('Hintergrund-Email fehlgeschlagen:', err)
       })
 
