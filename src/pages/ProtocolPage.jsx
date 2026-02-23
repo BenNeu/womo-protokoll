@@ -13,6 +13,7 @@ const sendProtocolEmail = async (savedProtocol, rental, type, formData) => {
 
   // Vertragsdaten aus Supabase holen und Unterschriften anhängen
   let contractData = null
+  console.log('rental.id für Vertragssuche:', rental.id)
   try {
     const { data } = await supabase
       .from('OrcaCampers_rental_contracts')
