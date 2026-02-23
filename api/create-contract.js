@@ -6,10 +6,14 @@ export default async function handler(req, res) {
     const data = req.body
     const fmt = (val) => (val !== null && val !== undefined && val !== '') ? val : '-'
     const fmtPrice = (val) => val ? parseFloat(val).toFixed(2).replace('.', ',') : '0,00'
+   // So:
     const fmtDate = (dateStr) => {
-      if (!dateStr) return '-'
-      return new Date(dateStr).toLocaleDateString('de-DE')
-    }
+     if (!dateStr) return '-'
+  // Deutsches Format dd.mm.yyyy direkt zurückgeben
+     if (typeof dateStr === 'string' && dateStr.includes('.')) return dateStr
+    const d = new Date(dateStr)
+     return isNaN(d) ? '-' : d.toLocaleDateString('de-DE')
+}
 
     const html = `<!DOCTYPE html>
 <html lang="de">
@@ -36,7 +40,7 @@ export default async function handler(req, res) {
 <body>
 
 <h1>Mietvertrag für ein Wohnmobil</h1>
-<p style="text-align:center;margin-bottom:4mm;">Vertragsnummer: <strong>${fmt(data.contract_number)}</strong> | Datum: <strong>${fmtDate(data.signature_date || new Date())}</strong></p>
+<p style="text-align:center;margin-bottom:4mm;">Vertragsnummer: <strong>${fmt(data.contract_number)}</strong> | Datum: <strong>${data.signature_date || new Date().toLocaleDateString('de-DE')}</strong>
 <p style="text-align:center;margin-bottom:6mm;">zwischen</p>
 
 <div class="parties">
@@ -173,7 +177,7 @@ Sollte das Fahrzeug nicht vollgetankt zurückgegeben werden, behält sich der Ve
 <p>36. Sollten einzelne Bestimmungen dieses Vertrages unwirksam oder undurchführbar sein oder werden, so wird dadurch die Wirksamkeit der übrigen Bestimmungen nicht berührt.</p>
 <p>37. Ausschließlicher Gerichtsstand für alle Streitigkeiten aus diesem Vertrag ist Würzburg.</p>
 
-<p style="margin-top:8mm;">Würzburg, den ${fmtDate(data.signature_date || new Date())}</p>
+<p style="margin-top:8mm;">Würzburg, den ${data.signature_date || new Date().toLocaleDateString('de-DE')}</p>
 
 <div class="signatures">
   <div class="sig-box">
