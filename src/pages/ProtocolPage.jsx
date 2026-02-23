@@ -15,11 +15,15 @@ const sendProtocolEmail = async (savedProtocol, rental, type, formData) => {
   let contractData = null
   console.log('rental.id für Vertragssuche:', rental.id)
   try {
-    const { data } = await supabase
-      .from('OrcaCampers_rental_contracts')
-      .select('*')
-      .eq('rental_id', rental.id)
-      .single()
+   const { data, error } = await supabase
+  .from('OrcaCampers_rental_contracts')
+  .select('*')
+  .eq('rental_id', rental.id)
+  .single()
+
+   console.log('Vertrag Query - rental.id:', rental.id)
+   console.log('Vertrag gefunden:', data)
+   console.log('Fehler:', error)
 
     if (data) {
       contractData = {
