@@ -41,15 +41,16 @@ const sendProtocolEmail = async (savedProtocol, rental, type, formData) => {
   const fileName = `${protocolType}_${rental.rental_number}.pdf`
 
   const payload = {
-    customer_email: rental.customer_email,
-    customer_name: rental.customer_name,
-    rental_number: rental.rental_number,
-    protocol_type: protocolType,
-    vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
-    pdf_base64: pdfBase64,
-    pdf_filename: fileName,
-    contract_data: contractData
-  }
+  customer_email: rental.customer_email,
+  customer_name: rental.customer_name,
+  rental_number: rental.rental_number,
+  rental_id: rental.id,          // neu
+  protocol_type: protocolType,
+  vehicle: `${rental.vehicle_manufacturer} ${rental.vehicle_model}`,
+  pdf_base64: pdfBase64,
+  pdf_filename: fileName,
+  contract_data: contractData
+}
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
