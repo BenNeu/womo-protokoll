@@ -15,6 +15,43 @@ export default async function handler(req, res) {
      return isNaN(d) ? '-' : d.toLocaleDateString('de-DE')
 }
 
+    // Zahlungsplan-Datumsberechnung
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const downPaymentDate = new Date(today)
+    downPaymentDate.setDate(downPaymentDate.getDate() + 3)
+
+    // rental_end_date parsen (deutsches Format dd.mm.yyyy oder ISO)
+    let departureDate = null
+    if (data.rental_end_date) {
+      if (typeof data.rental_end_date === 'string' && data.rental_end_date.includes('.')) {
+        const [d, m, y] = data.rental_end_date.split('.')
+        departureDate = new Date(Number(y), Number(m) - 1, Number(d))
+      } else {
+        departureDate = new Date(data.rental_end_date)
+      }
+      if (isNaN(departureDate)) departureDate = null
+    }
+
+    let downPaymentDueDisplay, finalPaymentDueDisplay
+    if (!departureDate) {
+      downPaymentDueDisplay = fmtDate(data.down_payment_due_date)
+      finalPaymentDueDisplay = fmtDate(data.final_payment_due_date)
+    } else {
+      const finalPaymentDate = new Date(departureDate)
+      finalPaymentDate.setDate(finalPaymentDate.getDate() - 30)
+
+      const isSofort = finalPaymentDate <= downPaymentDate || finalPaymentDate <= today
+      if (isSofort) {
+        downPaymentDueDisplay = 'Sofort fällig'
+        finalPaymentDueDisplay = 'Sofort fällig'
+      } else {
+        downPaymentDueDisplay = downPaymentDate.toLocaleDateString('de-DE')
+        finalPaymentDueDisplay = finalPaymentDate.toLocaleDateString('de-DE')
+      }
+    }
+
     const html = `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -91,13 +128,13 @@ export default async function handler(req, res) {
 </table>
 <p>7. Zahlungsplan:</p>
 <ul>
-  <li>Anzahlung: <strong>${fmtPrice(data.down_payment)} EUR</strong> bis zum <strong>${fmtDate(data.down_payment_due_date)}</strong></li>
-  <li>Restzahlung: <strong>${fmtPrice(data.final_payment)} EUR</strong> bis zum <strong>${fmtDate(data.final_payment_due_date)}</strong></li>
+  <li>Anzahlung: <strong>${fmtPrice(data.down_payment)} EUR</strong> bis zum <strong>${downPaymentDueDisplay}</strong></li>
+  <li>Restzahlung: <strong>${fmtPrice(data.final_payment)} EUR</strong> bis zum <strong>${finalPaymentDueDisplay}</strong></li>
 </ul>
 <p>8. Bankverbindung: Andreas Grimm und Ben Neuendorf GbR | IBAN: ${fmt(data.bank_iban)} | BIC: ${fmt(data.bank_bic)} | ${fmt(data.bank_name)}</p>
 
 <h2>§ 3 Kaution</h2>
-<p>9. Der Mieter hinterlegt bei Übergabe des Fahrzeugs eine Kaution in Höhe von <strong>${fmtPrice(data.deposit_amount)} EUR</strong> in bar oder per Vorab-Überweisung.</p>
+<p>9. Der Mieter hinterlegt bei Übergabe des Fahrzeugs eine Kaution in Höhe von <strong>1.500,00 EUR</strong> in bar, per Kreditkarte oder per Vorab-Überweisung.</p>
 <p>10. Die Kaution dient zur Absicherung aller Ansprüche des Vermieters aus diesem Mietverhältnis, insbesondere für Schäden am Fahrzeug, die nicht von der Versicherung gedeckt sind.</p>
 <p>11. Die Kaution wird nach ordnungsgemäßer Rückgabe des Fahrzeugs innerhalb von 14 Tagen an den Mieter zurückgezahlt.</p>
 

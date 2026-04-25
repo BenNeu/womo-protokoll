@@ -83,6 +83,8 @@ export default async function handler(req, res) {
   <tr><td>Anzahl Nächte</td><td>${fmt(data.rental_days)}</td></tr>
   <tr><td>Mietpreis gesamt</td><td>${fmtPrice((parseFloat(data.daily_rate)||0)*(parseFloat(data.rental_days)||0))} EUR</td></tr>
   ${data.extras_price && parseFloat(data.extras_price) > 0 ? "<tr><td>Extras (" + (data.extras_summary || "Einzelheiten siehe Rechnung") + ")</td><td>" + fmtPrice(data.extras_price) + " EUR</td></tr>" : ""}
+  ${data.pet_fee && parseInt(data.pet_fee) > 0 ? "<tr><td>Hundepauschale (inkl. Dog Travel Kit)</td><td>" + fmtPrice(data.pet_fee_cost) + " EUR</td></tr>" : ""}
+  ${data.discount_code && data.discount_code !== 'null' && parseFloat(data.discount_amount || 0) > 0 ? "<tr><td>Rabattcode: " + data.discount_code + "</td><td>-" + fmtPrice(data.discount_amount) + " EUR</td></tr>" : ""}
   <tr style="font-weight:bold"><td>Gesamtbetrag</td><td>${fmtPrice(data.total_amount)} EUR</td></tr>
 </table>
 <p>7. Zahlungsplan:</p>
