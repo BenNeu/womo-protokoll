@@ -12,6 +12,26 @@ export default async function handler(req, res) {
     }
     const signatureDate = data.signature_date ? data.signature_date : new Date().toLocaleDateString('de-DE')
 
+    // Gesamtpreis aus Einzelpositionen neu berechnen (wie im Rechnung-Node)
+    const recalcExtras =
+      (parseFloat(data.bed_linen || 0) * parseFloat(data.bed_linen_cost || 0)) +
+      (parseFloat(data.camping_set || 0) * parseFloat(data.camping_set_cost || 0)) +
+      (parseFloat(data.kitchen_set || 0) * parseFloat(data.kitchen_set_cost || 0)) +
+      (parseFloat(data.towel_set || 0) * parseFloat(data.towel_set_cost || 0)) +
+      (data.unlimited_km ? parseFloat(data.unlimited_km_cost || 0) : 0) +
+      (data.saturday_handover ? parseFloat(data.saturday_handover_cost || 0) : 0) +
+      (parseFloat(data.solar_panel || 0) * parseFloat(data.solar_panel_cost || 0) * parseFloat(data.rental_days || 0)) +
+      parseFloat(data.ad_blue_cost || 0) +
+      parseFloat(data.service_fee_cost || 0) +
+      (parseFloat(data.pet_fee || 0) * parseFloat(data.pet_fee_cost || 0))
+
+    const hasDiscount = parseFloat(data.discount_amount || 0) > 0
+    const effectiveDiscount = hasDiscount ? parseFloat(data.discount_amount || 0) : 0
+    const calcTotal = parseFloat(data.daily_rate || 0) * parseFloat(data.rental_days || 0) + recalcExtras - effectiveDiscount
+    const displayTotal = calcTotal > 0 ? calcTotal : parseFloat(data.total_amount || 0)
+    const downPayment = (displayTotal * 0.3).toFixed(2)
+    const finalPayment = (displayTotal * 0.7).toFixed(2)
+
     const html = `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -77,20 +97,19 @@ export default async function handler(req, res) {
 
 <h2>§ 2 Mietzeit und Mietpreis</h2>
 <p>5. Die Mietzeit beginnt am <strong>${fmtDate(data.rental_start_date)}</strong> um <strong>${fmt(data.rental_start_time || '14:00')}</strong> Uhr und endet am <strong>${fmtDate(data.rental_end_date)}</strong> um <strong>${fmt(data.rental_end_time || '10:00')}</strong> Uhr.</p>
-<p>6. Der Gesamtmietpreis beträgt <strong>${fmtPrice(data.total_amount)} EUR</strong>:</p>
+<p>6. Der Gesamtmietpreis beträgt <strong>${fmtPrice(displayTotal)} EUR</strong>:</p>
 <table>
   <tr><td>Mietpreis pro Nacht</td><td>${fmtPrice(data.daily_rate)} EUR</td></tr>
   <tr><td>Anzahl Nächte</td><td>${fmt(data.rental_days)}</td></tr>
   <tr><td>Mietpreis gesamt</td><td>${fmtPrice((parseFloat(data.daily_rate)||0)*(parseFloat(data.rental_days)||0))} EUR</td></tr>
-  ${data.extras_price && parseFloat(data.extras_price) > 0 ? "<tr><td>Extras (" + (data.extras_summary || "Einzelheiten siehe Rechnung") + ")</td><td>" + fmtPrice(data.extras_price) + " EUR</td></tr>" : ""}
-  ${data.pet_fee && parseInt(data.pet_fee) > 0 ? "<tr><td>Hundepauschale (inkl. Dog Travel Kit)</td><td>" + fmtPrice(data.pet_fee_cost) + " EUR</td></tr>" : ""}
-  ${data.discount_code && data.discount_code !== 'null' && parseFloat(data.discount_amount || 0) > 0 ? "<tr><td>Rabattcode: " + data.discount_code + "</td><td>-" + fmtPrice(data.discount_amount) + " EUR</td></tr>" : ""}
-  <tr style="font-weight:bold"><td>Gesamtbetrag</td><td>${fmtPrice(data.total_amount)} EUR</td></tr>
+  ${recalcExtras > 0 ? "<tr><td>Extras (" + (data.extras_summary || "Einzelheiten siehe Rechnung") + ")</td><td>" + fmtPrice(recalcExtras) + " EUR</td></tr>" : ""}
+  ${hasDiscount ? "<tr><td>" + (data.discount_code && data.discount_code !== 'null' ? "Rabattcode: " + data.discount_code : "Rabatt") + "</td><td>-" + fmtPrice(data.discount_amount) + " EUR</td></tr>" : ""}
+  <tr style="font-weight:bold"><td>Gesamtbetrag</td><td>${fmtPrice(displayTotal)} EUR</td></tr>
 </table>
 <p>7. Zahlungsplan:</p>
 <ul>
-  <li>Anzahlung: <strong>${fmtPrice(data.down_payment)} EUR</strong> bis zum <strong>${fmtDate(data.down_payment_due_date)}</strong></li>
-  <li>Restzahlung: <strong>${fmtPrice(data.final_payment)} EUR</strong> bis zum <strong>${fmtDate(data.final_payment_due_date)}</strong></li>
+  <li>Anzahlung: <strong>${fmtPrice(downPayment)} EUR</strong> bis zum <strong>${fmtDate(data.down_payment_due_date)}</strong></li>
+  <li>Restzahlung: <strong>${fmtPrice(finalPayment)} EUR</strong> bis zum <strong>${fmtDate(data.final_payment_due_date)}</strong></li>
 </ul>
 <p>8. Bankverbindung: Andreas Grimm und Ben Neuendorf GbR | IBAN: ${fmt(data.bank_iban)} | BIC: ${fmt(data.bank_bic)} | ${fmt(data.bank_name)}</p>
 
