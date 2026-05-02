@@ -95,6 +95,8 @@ export default function ProtocolPage() {
   const [rental, setRental] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploadingPhotos, setUploadingPhotos] = useState({ id: false, license: false, vehicle: false })
+  const anyUploading = uploadingPhotos.id || uploadingPhotos.license || uploadingPhotos.vehicle
 
   const [formData, setFormData] = useState({
     completed_by: '',
@@ -186,6 +188,7 @@ export default function ProtocolPage() {
   const handleSubmit = async () => {
     if (!formData.mileage) { alert('Bitte Kilometerstand eingeben'); return }
     if (!formData.completed_by) { alert('Bitte Name des Mitarbeiters eingeben'); return }
+    if (anyUploading) { alert('Bitte warten – Fotos werden noch hochgeladen.'); return }
 
     setSaving(true)
     try {
@@ -327,7 +330,10 @@ export default function ProtocolPage() {
         <label style={styles.label}>Personalausweis (Vorder- und Rückseite):
           <span style={styles.photoCount}> {formData.id_card_photos.length} Foto(s)</span>
         </label>
-        <PhotoCapture onCapture={(url) => setFormData(prev => ({...prev, id_card_photos: [...prev.id_card_photos, url]}))} />
+        <PhotoCapture
+          onCapture={(url) => setFormData(prev => ({...prev, id_card_photos: [...prev.id_card_photos, url]}))}
+          onUploadingChange={(v) => setUploadingPhotos(prev => ({...prev, id: v}))}
+        />
         {formData.id_card_photos.length > 0 && (
           <div style={styles.photoGrid}>
             {formData.id_card_photos.map((url, i) => (
@@ -344,7 +350,10 @@ export default function ProtocolPage() {
         <label style={styles.label}>Führerschein (Vorder- und Rückseite):
           <span style={styles.photoCount}> {formData.drivers_license_photos.length} Foto(s)</span>
         </label>
-        <PhotoCapture onCapture={(url) => setFormData(prev => ({...prev, drivers_license_photos: [...prev.drivers_license_photos, url]}))} />
+        <PhotoCapture
+          onCapture={(url) => setFormData(prev => ({...prev, drivers_license_photos: [...prev.drivers_license_photos, url]}))}
+          onUploadingChange={(v) => setUploadingPhotos(prev => ({...prev, license: v}))}
+        />
         {formData.drivers_license_photos.length > 0 && (
           <div style={styles.photoGrid}>
             {formData.drivers_license_photos.map((url, i) => (
@@ -361,7 +370,10 @@ export default function ProtocolPage() {
         Fahrzeugfotos
         <span style={styles.photoCount}> {formData.photo_urls.length} Foto(s)</span>
       </h2>
-      <PhotoCapture onCapture={handlePhotoAdded} />
+      <PhotoCapture
+        onCapture={handlePhotoAdded}
+        onUploadingChange={(v) => setUploadingPhotos(prev => ({...prev, vehicle: v}))}
+      />
       {formData.photo_urls.length > 0 && (
         <div style={styles.photoGrid}>
           {formData.photo_urls.map((url, i) => (
@@ -403,8 +415,8 @@ export default function ProtocolPage() {
         </div>
       )}
 
-      <button onClick={handleSubmit} disabled={saving} style={{...styles.submitButton, opacity: saving ? 0.7 : 1}}>
-        {saving ? '⏳ Wird gespeichert...' : '✅ Protokoll speichern'}
+      <button onClick={handleSubmit} disabled={saving || anyUploading} style={{...styles.submitButton, opacity: (saving || anyUploading) ? 0.7 : 1}}>
+        {saving ? '⏳ Wird gespeichert...' : anyUploading ? '⏳ Fotos werden hochgeladen...' : '✅ Protokoll speichern'}
       </button>
       <button onClick={() => navigate('/')} style={styles.cancelButton}>Abbrechen</button>
     </div>

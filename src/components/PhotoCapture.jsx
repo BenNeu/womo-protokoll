@@ -1,10 +1,14 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { supabase } from '../services/supabaseClient'
 
-export default function PhotoCapture({ onCapture, bucket = 'protocol-photos', folder = 'vehicle' }) {
+export default function PhotoCapture({ onCapture, onUploadingChange, bucket = 'protocol-photos', folder = 'vehicle' }) {
   const inputRef = useRef(null)
   const [preview, setPreview] = useState(null)
   const [uploading, setUploading] = useState(false)
+
+  useEffect(() => {
+    if (onUploadingChange) onUploadingChange(uploading)
+  }, [uploading, onUploadingChange])
 
   const handleCapture = async (e) => {
     const file = e.target.files[0]
@@ -17,6 +21,7 @@ export default function PhotoCapture({ onCapture, bucket = 'protocol-photos', fo
 
     // Upload zu Supabase Storage
     setUploading(true)
+    let uploadedSuccessfully = false
     try {
       const fileExt = file.name.split('.').pop()
       const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`
@@ -32,11 +37,17 @@ export default function PhotoCapture({ onCapture, bucket = 'protocol-photos', fo
         .getPublicUrl(fileName)
 
       onCapture(urlData.publicUrl)
+      uploadedSuccessfully = true
     } catch (err) {
       alert('Foto-Upload fehlgeschlagen: ' + err.message)
       setPreview(null)
     } finally {
       setUploading(false)
+      if (uploadedSuccessfully) {
+        // Preview & File-Input zurücksetzen, damit direkt das nächste Foto aufgenommen werden kann
+        setPreview(null)
+        if (inputRef.current) inputRef.current.value = ''
+      }
     }
   }
 
