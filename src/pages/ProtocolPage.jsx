@@ -331,6 +331,7 @@ export default function ProtocolPage() {
           <span style={styles.photoCount}> {formData.id_card_photos.length} Foto(s)</span>
         </label>
         <PhotoCapture
+          folder="protocol-photos/id_cards"
           onCapture={(url) => setFormData(prev => ({...prev, id_card_photos: [...prev.id_card_photos, url]}))}
           onUploadingChange={(v) => setUploadingPhotos(prev => ({...prev, id: v}))}
         />
@@ -351,6 +352,7 @@ export default function ProtocolPage() {
           <span style={styles.photoCount}> {formData.drivers_license_photos.length} Foto(s)</span>
         </label>
         <PhotoCapture
+          folder="protocol-photos/drivers_licenses"
           onCapture={(url) => setFormData(prev => ({...prev, drivers_license_photos: [...prev.drivers_license_photos, url]}))}
           onUploadingChange={(v) => setUploadingPhotos(prev => ({...prev, license: v}))}
         />
@@ -371,6 +373,7 @@ export default function ProtocolPage() {
         <span style={styles.photoCount}> {formData.photo_urls.length} Foto(s)</span>
       </h2>
       <PhotoCapture
+        folder="protocol-photos/vehicles"
         onCapture={handlePhotoAdded}
         onUploadingChange={(v) => setUploadingPhotos(prev => ({...prev, vehicle: v}))}
       />

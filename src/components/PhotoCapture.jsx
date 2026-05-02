@@ -28,7 +28,7 @@ const compressImage = (file, maxDim = 2000, quality = 0.85) => {
   })
 }
 
-export default function PhotoCapture({ onCapture, onUploadingChange, bucket = 'protocol-photos', folder = 'vehicle' }) {
+export default function PhotoCapture({ onCapture, onUploadingChange, bucket = 'orcacampers_documents', folder = 'protocol-photos/vehicle' }) {
   const inputRef = useRef(null)
   const [preview, setPreview] = useState(null)
   const [uploading, setUploading] = useState(false)
