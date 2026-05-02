@@ -1,6 +1,33 @@
 import { useRef, useState, useEffect } from 'react'
 import { supabase } from '../services/supabaseClient'
 
+// Komprimiert Bild im Browser (Canvas) – iPhone-Fotos sind sonst 3-8 MB groß
+const compressImage = (file, maxDim = 2000, quality = 0.85) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * scale)
+        canvas.height = Math.round(img.height * scale)
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : reject(new Error('Komprimierung fehlgeschlagen')),
+          'image/jpeg',
+          quality
+        )
+      }
+      img.onerror = () => reject(new Error('Bild konnte nicht geladen werden'))
+      img.src = e.target.result
+    }
+    reader.onerror = () => reject(new Error('Datei konnte nicht gelesen werden'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function PhotoCapture({ onCapture, onUploadingChange, bucket = 'protocol-photos', folder = 'vehicle' }) {
   const inputRef = useRef(null)
   const [preview, setPreview] = useState(null)
@@ -23,12 +50,12 @@ export default function PhotoCapture({ onCapture, onUploadingChange, bucket = 'p
     setUploading(true)
     let uploadedSuccessfully = false
     try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`
+      const compressed = await compressImage(file)
+      const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
 
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(fileName, file, { upsert: false })
+        .upload(fileName, compressed, { upsert: false, contentType: 'image/jpeg' })
 
       if (error) throw error
 
@@ -39,7 +66,9 @@ export default function PhotoCapture({ onCapture, onUploadingChange, bucket = 'p
       onCapture(urlData.publicUrl)
       uploadedSuccessfully = true
     } catch (err) {
-      alert('Foto-Upload fehlgeschlagen: ' + err.message)
+      console.error('Foto-Upload Fehler:', err)
+      const sizeKB = file ? Math.round(file.size / 1024) : '?'
+      alert(`Foto-Upload fehlgeschlagen: ${err.message || err.name || 'Unbekannter Fehler'}\nDateigröße: ${sizeKB} KB\n\nBitte erneut versuchen.`)
       setPreview(null)
     } finally {
       setUploading(false)
