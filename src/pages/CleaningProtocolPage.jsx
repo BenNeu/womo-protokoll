@@ -64,6 +64,7 @@ export default function CleaningProtocolPage() {
   const [specialRemarks, setSpecialRemarks] = useState('')
   const [photos, setPhotos] = useState([])
   const [signature, setSignature] = useState('')
+  const [photoUploading, setPhotoUploading] = useState(false)
 
   useEffect(() => {
     loadRental()
@@ -97,6 +98,11 @@ export default function CleaningProtocolPage() {
 
     if (!signature) {
       alert('Bitte Unterschrift hinzufügen')
+      return
+    }
+
+    if (photoUploading) {
+      alert('Bitte warten – Fotos werden noch hochgeladen.')
       return
     }
 
@@ -292,7 +298,11 @@ export default function CleaningProtocolPage() {
           />
 
           <label style={styles.label}>Fotos (Schäden, Zustand):</label>
-          <PhotoCapture onCapture={(photo) => setPhotos([...photos, photo])} />
+          <PhotoCapture
+            folder="cleaning-photos/damage"
+            onCapture={(photo) => setPhotos([...photos, photo])}
+            onUploadingChange={setPhotoUploading}
+          />
           
           {photos.length > 0 && (
             <div style={styles.photoPreview}>
@@ -324,8 +334,8 @@ export default function CleaningProtocolPage() {
           <button type="button" onClick={() => navigate('/admin')} style={styles.cancelButton}>
             Abbrechen
           </button>
-          <button type="submit" style={styles.submitButton}>
-            ✅ Aufbereitung abschließen
+          <button type="submit" disabled={photoUploading} style={{...styles.submitButton, opacity: photoUploading ? 0.7 : 1}}>
+            {photoUploading ? '⏳ Fotos werden hochgeladen...' : '✅ Aufbereitung abschließen'}
           </button>
         </div>
       </form>
