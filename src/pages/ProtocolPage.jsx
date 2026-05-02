@@ -58,7 +58,11 @@ const sendProtocolEmail = async (savedProtocol, rental, type, formData) => {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 30000)
 
-      const response = await fetch('https://n8n.benneuendorf.com/webhook/protocol-email', {
+      const webhookUrl = type === 'handover'
+        ? 'https://n8n.benneuendorf.com/webhook/protocol-email'
+        : 'https://n8n.benneuendorf.com/webhook/protocol-return-email'
+
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

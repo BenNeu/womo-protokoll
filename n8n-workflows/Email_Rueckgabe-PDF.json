@@ -1,0 +1,149 @@
+{
+  "name": "Email Rückgabe-PDF",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "protocol-return-email",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "webhookId": "a1b2c3d4-0002-4000-8000-000000000002"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json\nconst body = input.body || input\n\n// Dateiname sanitizen (Umlaute entfernen)\nconst rawFilename = body.pdf_filename || 'rueckgabe.pdf'\nconst sanitizedFilename = rawFilename\n  .replace(/Ü/g, 'Ue').replace(/ü/g, 'ue')\n  .replace(/Ö/g, 'Oe').replace(/ö/g, 'oe')\n  .replace(/Ä/g, 'Ae').replace(/ä/g, 'ae')\n  .replace(/ß/g, 'ss')\n  .replace(/\\s+/g, '_')\n\nconst protocolBuffer = Buffer.from(body.pdf_base64, 'base64')\nconst protocolBinary = await this.helpers.prepareBinaryData(\n  protocolBuffer,\n  sanitizedFilename,\n  'application/pdf'\n)\n\nreturn [{\n  json: {\n    customer_email: body.customer_email,\n    customer_name: body.customer_name,\n    rental_number: body.rental_number,\n    rental_id: body.rental_id,\n    protocol_type: body.protocol_type,\n    vehicle: body.vehicle,\n    pdf_filename: sanitizedFilename,\n    pdf_storage_url: `https://supabase.benneuendorf.com/storage/v1/object/public/orcacampers_documents/protocols/${sanitizedFilename}`\n  },\n  binary: {\n    protocol_pdf: protocolBinary\n  }\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@orcacampers.de",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "=Rückgabeprotokoll & Kautionsabwicklung - {{ $json.rental_number }}",
+        "emailFormat": "=html",
+        "html": "=<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <style>\n    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }\n    .container { max-width: 600px; margin: 0 auto; padding: 20px; background: #ffffff; }\n    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }\n    .header h1 { margin: 0; font-size: 26px; }\n    .documents-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 20px; margin: 20px 0; border-radius: 8px; }\n    .documents-box h3 { color: #856404; margin-top: 0; }\n    .document-list { list-style: none; padding: 0; }\n    .document-list li { padding: 10px; margin: 8px 0; background: white; border-radius: 6px; border-left: 3px solid #667eea; }\n    .info-box { background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2196F3; }\n    .info-box h3 { margin-top: 0; color: #1976d2; }\n    .info-box p { margin: 0 0 10px 0; }\n    .info-box p:last-child { margin: 0; font-size: 13px; color: #555; }\n    .review-box { background: #f3e5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #9c27b0; text-align: center; }\n    .review-box h3 { margin-top: 0; color: #6a1b9a; }\n    .review-box a { display: inline-block; background: #9c27b0; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 10px; }\n    .next-trip { background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #43a047; }\n    .next-trip h3 { margin-top: 0; color: #2e7d32; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>🚐 Vielen Dank für Ihre Rückgabe!</h1>\n    </div>\n\n    <p>Sehr geehrte/r {{ $json.customer_name }},</p>\n    <p>vielen Dank, dass Sie das Fahrzeug <strong>{{ $json.vehicle }}</strong> an uns zurückgegeben haben. Wir hoffen, Sie hatten eine wunderbare Reise!</p>\n    <p>Vertragsnummer: <strong>{{ $json.rental_number }}</strong></p>\n\n    <div class=\"documents-box\">\n      <h3>📎 Ihr Rückgabeprotokoll im Anhang</h3>\n      <ul class=\"document-list\">\n        <li><strong>Rücknahmeprotokoll</strong> – Fahrzeugzustand bei Rückgabe</li>\n      </ul>\n    </div>\n\n    <div class=\"info-box\">\n      <h3>💰 Kaution & Abrechnung</h3>\n      <p>Ihre Kaution in Höhe von <strong>1.500,00 €</strong> wird innerhalb von 14 Tagen nach Rückgabe auf Ihr Konto zurücküberwiesen.</p>\n      <p>Sollten Mehrkilometer-, Reinigungs- oder Tankkosten angefallen sein, werden diese mit der Kaution verrechnet bzw. separat in Rechnung gestellt. Eine entsprechende Aufstellung erhalten Sie in dem Fall gesondert.</p>\n    </div>\n\n    <div class=\"review-box\">\n      <h3>⭐ Wir freuen uns über Ihre Bewertung</h3>\n      <p style=\"margin: 0;\">Hat Ihnen die Reise gefallen? Mit einer kurzen Bewertung helfen Sie anderen Camping-Freunden bei der Entscheidung – und uns, noch besser zu werden.</p>\n      <a href=\"https://www.orcacampers.de/bewertung\">Bewertung schreiben</a>\n    </div>\n\n    <div class=\"next-trip\">\n      <h3>🌍 Schon wieder Reiselust?</h3>\n      <p style=\"margin: 0;\">Auf <a href=\"https://www.orcacampers.de\" style=\"color: #2e7d32; font-weight: bold;\">www.orcacampers.de</a> finden Sie unsere aktuellen Verfügbarkeiten für Ihre nächste Tour.</p>\n    </div>\n\n    <p>Mit freundlichen Grüßen,<br>Ihr OrcaCampers Team</p>\n  </div>\n\n  <!-- ZOHO SIGNATUR -->\n  <div style=\"max-width: 600px; margin: 20px auto; padding: 20px;\">\n    <table style=\"font-family: Arial, sans-serif; font-size: 14px; color: #333; border-collapse: collapse; width: 100%;\">\n      <tr>\n        <td style=\"padding-right: 20px; vertical-align: top; width: 140px;\">\n          <img src=\"https://orcacampers.de/images/orcacampers-logo.png\" alt=\"OrcaCampers Logo\" style=\"width: 120px; height: auto; display: block;\">\n        </td>\n        <td style=\"padding-left: 20px; border-left: 3px solid #0066cc; vertical-align: top;\">\n          <p style=\"margin: 0 0 5px 0; font-size: 14px;\">Viele Grüße</p>\n          <p style=\"margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #0066cc;\">BEN NEUENDORF</p>\n          <p style=\"margin: 0 0 15px 0; font-size: 12px; color: #666;\">Wohnmobilvermietung</p>\n          <p style=\"margin: 0; line-height: 1.8; font-size: 13px;\">\n            📞 +49 155 9719 4661<br>\n            📧 <a href=\"mailto:info@orcacampers.de\" style=\"color: #0066cc; text-decoration: none;\">info@orcacampers.de</a><br>\n            🌐 <a href=\"https://www.orcacampers.de\" style=\"color: #0066cc; text-decoration: none;\">www.orcacampers.de</a>\n          </p>\n        </td>\n      </tr>\n    </table>\n  </div>\n\n  <!-- DISCLAIMER -->\n  <div style=\"max-width: 600px; margin: 20px auto; padding: 20px; border-top: 2px solid #e0e0e0;\">\n    <p style=\"margin: 0; font-size: 11px; color: #666; line-height: 1.5; text-align: justify;\">\n      <strong>🔒 Vertraulichkeitshinweis / Confidentiality Notice</strong><br><br>\n      Der Inhalt dieser E-Mail ist vertraulich und nur für den in der Nachricht angegebenen Empfänger bestimmt. Es ist strengstens untersagt, Teile dieser Nachricht ohne schriftliche Zustimmung des Absenders an Dritte weiterzugeben. Sollten Sie diese Nachricht versehentlich erhalten haben, antworten Sie bitte darauf und löschen Sie sie anschließend, damit wir einen solchen Fehler in Zukunft vermeiden können.<br><br>\n      The content of this email is confidential and intended for the recipient specified in message only. It is strictly forbidden to share any part of this message with any third party, without a written consent of the sender. If you received this message by mistake, please reply to this message and follow with its deletion, so that we can ensure such a mistake does not occur in the future.\n    </p>\n  </div>\n\n</body>\n</html>",
+        "options": {
+          "appendAttribution": false,
+          "attachments": "=protocol_pdf"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [464, 0],
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Send email",
+      "webhookId": "a1b2c3d4-0005-4000-8000-000000000005",
+      "credentials": {
+        "smtp": {
+          "id": "5NsVEnr4Zf8WrJ87",
+          "name": "SMTP Zoho Mail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://supabase.benneuendorf.com/storage/v1/object/orcacampers_documents/protocols/{{ $json.pdf_filename }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc0ODAxODEwMCwiZXhwIjo0OTAzNjkxNzAwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.E1CytlMmA94F1gvVRIbuIWXaXDDLl643b2BOpJfQSTQ"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/pdf"
+            },
+            {
+              "name": "x-upsert",
+              "value": "true"
+            },
+            {
+              "name": "apikey",
+              "value": "=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc0ODAxODEwMCwiZXhwIjo0OTAzNjkxNzAwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.E1CytlMmA94F1gvVRIbuIWXaXDDLl643b2BOpJfQSTQ"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "protocol_pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [464, -160],
+      "id": "a1b2c3d4-0006-4000-8000-000000000006",
+      "name": "Storage Upload"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://supabase-main-kong:8000/rest/v1/OrcaCampers_handover_protocols?rental_id=eq.{{ $('Code in JavaScript').item.json.rental_id }}&protocol_type=eq.{{ $('Code in JavaScript').item.json.protocol_type }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc0ODAxODEwMCwiZXhwIjo0OTAzNjkxNzAwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.E1CytlMmA94F1gvVRIbuIWXaXDDLl643b2BOpJfQSTQ"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc0ODAxODEwMCwiZXhwIjo0OTAzNjkxNzAwLCJyb2xlIjoic2VydmljZV9yb2xlIn0.E1CytlMmA94F1gvVRIbuIWXaXDDLl643b2BOpJfQSTQ"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"protocol_type\": \"{{ $('Code in JavaScript').item.json.protocol_type }}\",\n  \"customer_name\": \"{{ $('Code in JavaScript').item.json.customer_name }}\",\n  \"completed_at\": \"{{ $now }}\",\n  \"created_at\": \"{{ $now }}\",\n  \"pdf_storage_url\": \"{{ $('Code in JavaScript').item.json.pdf_storage_url }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [672, -160],
+      "id": "a1b2c3d4-0007-4000-8000-000000000007",
+      "name": "Supabase Update"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]]
+    },
+    "Code in JavaScript": {
+      "main": [[
+        { "node": "Storage Upload", "type": "main", "index": 0 },
+        { "node": "Send email", "type": "main", "index": 0 }
+      ]]
+    },
+    "Send email": { "main": [[]] },
+    "Storage Upload": {
+      "main": [[{ "node": "Supabase Update", "type": "main", "index": 0 }]]
+    },
+    "Supabase Update": { "main": [[]] }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "tags": []
+}
